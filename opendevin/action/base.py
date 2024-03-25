@@ -1,10 +1,10 @@
 from dataclasses import dataclass
-
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from opendevin.controller import AgentController
     from opendevin.observation import Observation
+
 
 @dataclass
 class Action:
@@ -12,7 +12,11 @@ class Action:
         raise NotImplementedError
 
     def to_dict(self):
-        return {"action": self.__class__.__name__, "args": self.__dict__, "message": self.message}
+        return {
+            "action": self.__class__.__name__,
+            "args": self.__dict__,
+            "message": self.message,
+        }
 
     @property
     def executable(self) -> bool:
@@ -21,7 +25,6 @@ class Action:
     @property
     def message(self) -> str:
         raise NotImplementedError
-
 
 
 class ExecutableAction(Action):
@@ -34,6 +37,7 @@ class NotExecutableAction(Action):
     @property
     def executable(self) -> bool:
         return False
+
 
 class NullAction(NotExecutableAction):
     """An action that does nothing.

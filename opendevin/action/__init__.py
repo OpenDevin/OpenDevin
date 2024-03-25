@@ -1,8 +1,13 @@
+from .agent import (
+    AgentEchoAction,
+    AgentFinishAction,
+    AgentRecallAction,
+    AgentThinkAction,
+)
 from .base import Action, NullAction
-from .bash import CmdRunAction, CmdKillAction
+from .bash import CmdKillAction, CmdRunAction
 from .browse import BrowseURLAction
 from .fileop import FileReadAction, FileWriteAction
-from .agent import AgentRecallAction, AgentThinkAction, AgentFinishAction, AgentEchoAction
 
 __all__ = [
     "Action",

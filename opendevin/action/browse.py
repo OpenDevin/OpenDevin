@@ -1,9 +1,11 @@
+from dataclasses import dataclass
+
 import requests
 
-from dataclasses import dataclass
 from opendevin.observation import BrowserOutputObservation
 
 from .base import ExecutableAction
+
 
 @dataclass
 class BrowseURLAction(ExecutableAction):
@@ -11,10 +13,7 @@ class BrowseURLAction(ExecutableAction):
 
     def run(self, *args, **kwargs) -> BrowserOutputObservation:
         response = requests.get(self.url)
-        return BrowserOutputObservation(
-            content=response.text,
-            url=self.url
-        )
+        return BrowserOutputObservation(content=response.text, url=self.url)
 
     @property
     def message(self) -> str:

@@ -1,20 +1,16 @@
 import asyncio
-from typing import List, Callable, Tuple
+from typing import Callable, List, Tuple
 
-from opendevin.state import State
-from opendevin.agent import Agent
 from opendevin.action import (
     Action,
-    NullAction,
+    AgentFinishAction,
     FileReadAction,
     FileWriteAction,
-    AgentFinishAction,
+    NullAction,
 )
-from opendevin.observation import (
-    Observation,
-    NullObservation
-)
-
+from opendevin.agent import Agent
+from opendevin.observation import NullObservation, Observation
+from opendevin.state import State
 
 from .command_manager import CommandManager
 
@@ -54,11 +50,11 @@ class AgentController:
 
                 state: State = self.get_current_state()
                 action: Action = self.agent.step(state)
-                
+
                 print("ACTION", action, flush=True)
                 for _callback_fn in self.callbacks:
                     _callback_fn(action)
-                
+
                 if isinstance(action, AgentFinishAction):
                     print("FINISHED", flush=True)
                     break
@@ -70,7 +66,6 @@ class AgentController:
                     print(action, flush=True)
                 print("---", flush=True)
 
-
                 if action.executable:
                     observation: Observation = action.run(self)
                 else:
@@ -78,7 +73,7 @@ class AgentController:
                     observation = NullObservation("")
                 print("OBSERVATION", observation, flush=True)
                 self.state_updated_info.append((action, observation))
-                
+
                 print(observation, flush=True)
                 for _callback_fn in self.callbacks:
                     _callback_fn(observation)

@@ -1,13 +1,8 @@
 from dataclasses import dataclass
 from typing import List, Tuple
 
-from opendevin.action import (
-    Action,
-)
-from opendevin.observation import (
-    Observation,
-    CmdOutputObservation,
-)
+from opendevin.action import Action
+from opendevin.observation import CmdOutputObservation, Observation
 
 
 @dataclass

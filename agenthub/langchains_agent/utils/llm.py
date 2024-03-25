@@ -8,16 +8,14 @@ if os.getenv("DEBUG"):
     set_debug(True)
 
 from typing import List
-from langchain_core.pydantic_v1 import BaseModel
-
-from opendevin.observation import (
-    CmdOutputObservation,
-)
 
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
+from langchain_core.pydantic_v1 import BaseModel
 from langchain_openai import ChatOpenAI
+
+from opendevin.observation import CmdOutputObservation
 
 ACTION_PROMPT = """
 You're a thoughtful robot. Your main task is to {task}.
@@ -135,19 +133,23 @@ def request_action(
     hint = ""
     if len(thoughts) > 0:
         latest_thought = thoughts[-1]
-        if latest_thought["action"] == 'think':
-            if latest_thought["args"]['thought'].startswith("OK so my task is"):
+        if latest_thought["action"] == "think":
+            if latest_thought["args"]["thought"].startswith("OK so my task is"):
                 hint = "You're just getting started! What should you do first?"
             else:
-                hint = "You've been thinking a lot lately. Maybe it's time to take action?"
-        elif latest_thought["action"] == 'error':
+                hint = (
+                    "You've been thinking a lot lately. Maybe it's time to take action?"
+                )
+        elif latest_thought["action"] == "error":
             hint = "Looks like that last command failed. Maybe you need to fix it, or try something else."
 
     bg_commands_message = ""
     if len(background_commands_obs) > 0:
         bg_commands_message = "The following commands are running in the background:"
         for command_obs in background_commands_obs:
-            bg_commands_message += f"\n`{command_obs.command_id}`: {command_obs.command}"
+            bg_commands_message += (
+                f"\n`{command_obs.command_id}`: {command_obs.command}"
+            )
         bg_commands_message += "\nYou can end any process by sending a `kill` action with the numerical `id` above."
 
     latest_thought = thoughts[-1]

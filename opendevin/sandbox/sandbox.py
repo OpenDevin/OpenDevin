@@ -1,17 +1,19 @@
-import os
-import sys
-import uuid
-import time
-import select
-import docker
-from typing import Tuple
-from collections import namedtuple
 import atexit
+import os
+import select
+import sys
+import time
+import uuid
+from collections import namedtuple
+from typing import Tuple
+
+import docker
 
 InputType = namedtuple("InputType", ["content"])
 OutputType = namedtuple("OutputType", ["content"])
 
 CONTAINER_IMAGE = os.getenv("SANDBOX_CONTAINER_IMAGE", "opendevin/sandbox:v0.1")
+
 
 class DockerInteractive:
 
@@ -20,14 +22,16 @@ class DockerInteractive:
         workspace_dir: str | None = None,
         container_image: str | None = None,
         timeout: int = 120,
-        id: str | None = None
+        id: str | None = None,
     ):
         if id is not None:
             self.instance_id = id
         else:
             self.instance_id = str(uuid.uuid4())
         if workspace_dir is not None:
-            assert os.path.exists(workspace_dir), f"Directory {workspace_dir} does not exist."
+            assert os.path.exists(
+                workspace_dir
+            ), f"Directory {workspace_dir} does not exist."
             # expand to absolute path
             self.workspace_dir = os.path.abspath(workspace_dir)
         else:
@@ -49,11 +53,13 @@ class DockerInteractive:
 
         self.restart_docker_container()
         uid = os.getuid()
-        exit_code, logs = self.container.exec_run([
-            '/bin/bash', '-c',
-            f'useradd --shell /bin/bash -u {uid} -o -c \"\" -m devin'
+        exit_code, logs = self.container.exec_run(
+            [
+                "/bin/bash",
+                "-c",
+                f'useradd --shell /bin/bash -u {uid} -o -c "" -m devin',
             ],
-            workdir="/workspace"
+            workdir="/workspace",
         )
         # regester container cleanup function
         atexit.register(self.cleanup)
@@ -63,13 +69,13 @@ class DockerInteractive:
             return ""
         logs = ""
         while True:
-            ready_to_read, _, _ = select.select([self.log_generator], [], [], .1) # type: ignore[has-type]
+            ready_to_read, _, _ = select.select([self.log_generator], [], [], 0.1)  # type: ignore[has-type]
             if ready_to_read:
-                data = self.log_generator.read(4096) # type: ignore[has-type]
+                data = self.log_generator.read(4096)  # type: ignore[has-type]
                 if not data:
                     break
                 # FIXME: we're occasionally seeing some escape characters like `\x02` and `\x00` in the logs...
-                chunk = data.decode('utf-8')
+                chunk = data.decode("utf-8")
                 logs += chunk
             else:
                 break
@@ -77,13 +83,17 @@ class DockerInteractive:
 
     def execute(self, cmd: str) -> Tuple[int, str]:
         # TODO: each execute is not stateful! We need to keep track of the current working directory
-        exit_code, logs = self.container.exec_run(['su', 'devin', '-c', cmd], workdir="/workspace")
-        return exit_code, logs.decode('utf-8')
+        exit_code, logs = self.container.exec_run(
+            ["su", "devin", "-c", cmd], workdir="/workspace"
+        )
+        return exit_code, logs.decode("utf-8")
 
     def execute_in_background(self, cmd: str) -> None:
         self.log_time = time.time()
-        result = self.container.exec_run(['su', 'devin', '-c', cmd], socket=True, workdir="/workspace")
-        self.log_generator = result.output # socket.SocketIO
+        result = self.container.exec_run(
+            ["su", "devin", "-c", cmd], socket=True, workdir="/workspace"
+        )
+        self.log_generator = result.output  # socket.SocketIO
         self.log_generator._sock.setblocking(0)
 
     def close(self):
@@ -110,13 +120,14 @@ class DockerInteractive:
         docker_client = docker.from_env()
         try:
             self.container = docker_client.containers.run(
-                    self.container_image,
-                    command="tail -f /dev/null",
-                    network_mode='host',
-                    working_dir="/workspace",
-                    name=self.container_name,
-                    detach=True,
-                    volumes={self.workspace_dir: {"bind": "/workspace", "mode": "rw"}})
+                self.container_image,
+                command="tail -f /dev/null",
+                network_mode="host",
+                working_dir="/workspace",
+                name=self.container_name,
+                detach=True,
+                volumes={self.workspace_dir: {"bind": "/workspace", "mode": "rw"}},
+            )
         except Exception as e:
             print(f"Failed to start container: {e}")
             raise e
@@ -142,8 +153,10 @@ class DockerInteractive:
         self.container.remove(force=True)
         print("Finish cleaning up Docker container")
 
+
 if __name__ == "__main__":
     import argparse
+
     parser = argparse.ArgumentParser(description="Interactive Docker container")
     parser.add_argument(
         "-d",

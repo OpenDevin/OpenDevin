@@ -1,11 +1,10 @@
+import chromadb
+from llama_index.core import Document, VectorStoreIndex
+from llama_index.core.retrievers import VectorIndexRetriever
+from llama_index.vector_stores.chroma import ChromaVectorStore
+
 from . import json
 
-import chromadb
-
-from llama_index.core import Document
-from llama_index.core.retrievers import VectorIndexRetriever
-from llama_index.core import VectorStoreIndex
-from llama_index.vector_stores.chroma import ChromaVectorStore
 
 class LongTermMemory:
     def __init__(self):
@@ -34,5 +33,3 @@ class LongTermMemory:
         )
         results = retriever.retrieve(query)
         return [r.get_text() for r in results]
-
-

@@ -1,28 +1,26 @@
-from typing import List, Dict, Type
+from typing import Dict, List, Type
 
 import agenthub.langchains_agent.utils.llm as llm
-from opendevin.agent import Agent
+from agenthub.langchains_agent.utils.memory import LongTermMemory
+from agenthub.langchains_agent.utils.monologue import Monologue
 from opendevin.action import (
     Action,
-    CmdRunAction,
-    CmdKillAction,
-    BrowseURLAction,
-    FileReadAction,
-    FileWriteAction,
+    AgentFinishAction,
     AgentRecallAction,
     AgentThinkAction,
-    AgentFinishAction,
+    BrowseURLAction,
+    CmdKillAction,
+    CmdRunAction,
+    FileReadAction,
+    FileWriteAction,
 )
+from opendevin.agent import Agent
 from opendevin.observation import (
-    Observation,
-    CmdOutputObservation,
     BrowserOutputObservation,
+    CmdOutputObservation,
+    Observation,
 )
 from opendevin.state import State
-
-from agenthub.langchains_agent.utils.monologue import Monologue
-from agenthub.langchains_agent.utils.memory import LongTermMemory
-
 
 INITIAL_THOUGHTS = [
     "I exist!",
@@ -78,7 +76,10 @@ ACTION_TYPE_TO_CLASS: Dict[str, Type[Action]] = {
     "finish": AgentFinishAction,
 }
 
-CLASS_TO_ACTION_TYPE: Dict[Type[Action], str] = {v: k for k, v in ACTION_TYPE_TO_CLASS.items()}
+CLASS_TO_ACTION_TYPE: Dict[Type[Action], str] = {
+    v: k for k, v in ACTION_TYPE_TO_CLASS.items()
+}
+
 
 class LangchainsAgent(Agent):
     _initialized = False
@@ -89,8 +90,13 @@ class LangchainsAgent(Agent):
         self.memory = LongTermMemory()
 
     def _add_event(self, event: dict):
-        if 'output' in event['args'] and len(event['args']['output']) > MAX_OUTPUT_LENGTH:
-            event['args']['output'] = event['args']['output'][:MAX_OUTPUT_LENGTH] + "..."
+        if (
+            "output" in event["args"]
+            and len(event["args"]["output"]) > MAX_OUTPUT_LENGTH
+        ):
+            event["args"]["output"] = (
+                event["args"]["output"][:MAX_OUTPUT_LENGTH] + "..."
+            )
 
         self.monologue.add_event(event)
         self.memory.add_event(event)
@@ -153,7 +159,6 @@ class LangchainsAgent(Agent):
                 raise NotImplementedError(f"Unknown observation type: {obs}")
             self._add_event(d)
 
-
             if isinstance(prev_action, CmdRunAction):
                 d = {"action": "run", "args": {"command": prev_action.command}}
             elif isinstance(prev_action, CmdKillAction):
@@ -163,7 +168,10 @@ class LangchainsAgent(Agent):
             elif isinstance(prev_action, FileReadAction):
                 d = {"action": "read", "args": {"file": prev_action.path}}
             elif isinstance(prev_action, FileWriteAction):
-                d = {"action": "write", "args": {"file": prev_action.path, "content": prev_action.contents}}
+                d = {
+                    "action": "write",
+                    "args": {"file": prev_action.path, "content": prev_action.contents},
+                }
             elif isinstance(prev_action, AgentRecallAction):
                 d = {"action": "recall", "args": {"query": prev_action.query}}
             elif isinstance(prev_action, AgentThinkAction):
@@ -175,7 +183,7 @@ class LangchainsAgent(Agent):
             self._add_event(d)
 
         state.updated_info = []
-            
+
         action_dict = llm.request_action(
             self.instruction,
             self.monologue.get_thoughts(),

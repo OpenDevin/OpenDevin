@@ -1,27 +1,18 @@
 import os
 import re
-from litellm import completion
-from termcolor import colored
 from typing import List, Mapping
 
-from opendevin.agent import Agent
-from opendevin.state import State
-from opendevin.action import (
-    Action,
-    CmdRunAction,
-    AgentEchoAction,
-    AgentFinishAction,
-)
-from opendevin.observation import (
-    CmdOutputObservation,
-    AgentMessageObservation,
-)
+from litellm import completion
+from termcolor import colored
 
+from opendevin.action import Action, AgentEchoAction, AgentFinishAction, CmdRunAction
+from opendevin.agent import Agent
+from opendevin.observation import AgentMessageObservation, CmdOutputObservation
+from opendevin.state import State
 
 assert (
     "OPENAI_API_KEY" in os.environ
 ), "Please set the OPENAI_API_KEY environment variable."
-
 
 
 SYSTEM_MESSAGE = """You are a helpful assistant. You will be provided access (as root) to a bash shell to complete user-provided tasks.
@@ -60,10 +51,7 @@ def parse_response(response) -> str:
 
 
 class CodeActAgent(Agent):
-    def __init__(
-        self,
-        model_name: str
-    ) -> None:
+    def __init__(self, model_name: str) -> None:
         """
         Initializes a new instance of the CodeActAgent class.
 
@@ -88,9 +76,13 @@ class CodeActAgent(Agent):
 
         if updated_info:
             for prev_action, obs in updated_info:
-                assert isinstance(prev_action, (CmdRunAction, AgentEchoAction)), "Expecting CmdRunAction or AgentEchoAction for Action"
+                assert isinstance(
+                    prev_action, (CmdRunAction, AgentEchoAction)
+                ), "Expecting CmdRunAction or AgentEchoAction for Action"
 
-                if isinstance(obs, AgentMessageObservation):  # warning message from itself
+                if isinstance(
+                    obs, AgentMessageObservation
+                ):  # warning message from itself
                     self.messages.append({"role": "user", "content": obs.content})
                     print(colored("===USER:===\n" + obs.content, "green"))
                 elif isinstance(obs, CmdOutputObservation):
@@ -99,7 +91,9 @@ class CodeActAgent(Agent):
                     self.messages.append({"role": "user", "content": content})
                     print(colored("===ENV OBSERVATION:===\n" + content, "blue"))
                 else:
-                    raise NotImplementedError(f"Unknown observation type: {obs.__class__}")
+                    raise NotImplementedError(
+                        f"Unknown observation type: {obs.__class__}"
+                    )
 
         response = completion(
             messages=self.messages,
@@ -119,7 +113,7 @@ class CodeActAgent(Agent):
             if command_group.strip() == "exit":
                 print(colored("Exit received. Exiting...", "red"))
                 return AgentFinishAction()
-            return CmdRunAction(command = command_group)
+            return CmdRunAction(command=command_group)
             # # execute the code
             # # TODO: does exit_code get loaded into Message?
             # exit_code, observation = self.env.execute(command_group)
@@ -131,8 +125,9 @@ class CodeActAgent(Agent):
             # observation = INVALID_INPUT_MESSAGE
             # self._history.append(Message(Role.ASSISTANT, observation))
             # print(colored("===ENV OBSERVATION:===\n" + observation, "blue"))
-            return AgentEchoAction(content=INVALID_INPUT_MESSAGE)  # warning message to itself
-
+            return AgentEchoAction(
+                content=INVALID_INPUT_MESSAGE
+            )  # warning message to itself
 
     def search_memory(self, query: str) -> List[str]:
         raise NotImplementedError("Implement this abstract method")

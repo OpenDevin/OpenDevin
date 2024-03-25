@@ -20,6 +20,7 @@ class CmdRunAction(ExecutableAction):
     def message(self) -> str:
         return f"Running command: {self.command}"
 
+
 @dataclass
 class CmdKillAction(ExecutableAction):
     id: int

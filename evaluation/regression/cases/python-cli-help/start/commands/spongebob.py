@@ -1,5 +1,5 @@
 def spongebob_case(s):
-    result = ''
+    result = ""
     for i, char in enumerate(s):
         if i % 2 == 0:
             result += char.lower()

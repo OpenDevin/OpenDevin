@@ -1,6 +1,7 @@
 import agenthub.langchains_agent.utils.json as json
 import agenthub.langchains_agent.utils.llm as llm
 
+
 class Monologue:
     def __init__(self, model_name):
         self.thoughts = []
@@ -19,5 +20,3 @@ class Monologue:
         new_thoughts = llm.summarize_monologue(self.thoughts, self.model_name)
         # self.thoughts = [Event(t['action'], t['args']) for t in new_thoughts]
         self.thoughts = new_thoughts
-
-
