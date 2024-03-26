@@ -2,8 +2,6 @@ import os
 import re
 from typing import List, Mapping
 
-from termcolor import colored
-
 from opendevin.agent import Agent
 from opendevin.state import State
 from opendevin.action import (
@@ -83,19 +81,16 @@ class CodeActAgent(Agent):
                 {"role": "system", "content": SYSTEM_MESSAGE},
                 {"role": "user", "content": self.instruction},
             ]
-            print(colored("===USER:===\n" + self.instruction, "green"))
         updated_info = state.updated_info
         if updated_info:
             for prev_action, obs in updated_info:
                 assert isinstance(prev_action, (CmdRunAction, AgentEchoAction)), "Expecting CmdRunAction or AgentEchoAction for Action"
                 if isinstance(obs, AgentMessageObservation):  # warning message from itself
                     self.messages.append({"role": "user", "content": obs.content})
-                    print(colored("===USER:===\n" + obs.content, "green"))
                 elif isinstance(obs, CmdOutputObservation):
                     content = "OBSERVATION:\n" + obs.content
                     content += f"\n[Command {obs.command_id} finished with exit code {obs.exit_code}]]"
                     self.messages.append({"role": "user", "content": content})
-                    print(colored("===ENV OBSERVATION:===\n" + content, "blue"))
                 else:
                     raise NotImplementedError(f"Unknown observation type: {obs.__class__}")
         response = self.llm.completion(
@@ -106,27 +101,23 @@ class CodeActAgent(Agent):
         )
         action_str: str = parse_response(response)
         self.messages.append({"role": "assistant", "content": action_str})
-        print(colored("===ASSISTANT:===\n" + action_str, "yellow"))
 
         command = re.search(r"<execute>(.*)</execute>", action_str, re.DOTALL)
         if command is not None:
             # a command was found
             command_group = command.group(1)
             if command_group.strip() == "exit":
-                print(colored("Exit received. Exiting...", "red"))
                 return AgentFinishAction()
             return CmdRunAction(command = command_group)
             # # execute the code
             # # TODO: does exit_code get loaded into Message?
             # exit_code, observation = self.env.execute(command_group)
             # self._history.append(Message(Role.ASSISTANT, observation))
-            # print(colored("===ENV OBSERVATION:===\n" + observation, "blue"))
         else:
             # we could provide a error message for the model to continue similar to
             # https://github.com/xingyaoww/mint-bench/blob/main/mint/envs/general_env.py#L18-L23
             # observation = INVALID_INPUT_MESSAGE
             # self._history.append(Message(Role.ASSISTANT, observation))
-            # print(colored("===ENV OBSERVATION:===\n" + observation, "blue"))
             return AgentEchoAction(content=INVALID_INPUT_MESSAGE)  # warning message to itself
 
 
