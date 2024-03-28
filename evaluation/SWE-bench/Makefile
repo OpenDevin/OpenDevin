@@ -20,3 +20,6 @@ test:
 all:
 	docker buildx build --platform linux/amd64,linux/arm64 \
 	-t ${FULL_IMAGE} -t ${LATEST_FULL_IMAGE} --push -f Dockerfile .
+
+get-full-image:
+	@echo ${FULL_IMAGE}

@@ -6,14 +6,14 @@ on:
   workflow_dispatch:
     inputs:
       reason:
-        description: 'Why manual trigger?'
-        required: false
+        description: 'Reason for manual trigger'
+        required: true
         default: ''
 
 jobs:
   ghcr_build_and_push:
     runs-on: ubuntu-latest
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' || github.event.inputs.reason != ''
 
     steps:
       - name: checkout
@@ -35,11 +35,25 @@ jobs:
           DOCKER_BUILD_ORG=$(echo "${{ github.repository }}" | tr '[A-Z]' '[a-z]' | cut -d '/' -f 1)
           # Find directories containing Dockerfile but not containing .dockerfileignore
           while IFS= read -r dockerfile_dir; do
+          
             # Check if .dockerfileignore exists in the directory
-            if [ ! -f "$dockerfile_dir/.dockerfileignore" ]; then
-              # Change directory and execute 'make all'
-              pushd "$dockerfile_dir" > /dev/null
-              make all DOCKER_BUILD_ORG=$DOCKER_BUILD_ORG
-              popd > /dev/null
+            if [ -f "$dockerfile_dir/.dockerfileignore" ]; then
+                echo "$dockerfile_dir/.dockerfileignore exists, skipping build and push"
+                continue
             fi
+          
+            # Check if image was already exist in ghcr.io
+            pushd "$dockerfile_dir" > /dev/null
+            FULL_IMAGE=$(make get-full-image DOCKER_BUILD_ORG=$DOCKER_BUILD_ORG)
+            popd > /dev/null
+            EXISTS=$(docker manifest inspect "$FULL_IMAGE" > /dev/null 2>&1 && echo "true" || echo "false")
+            if [ "$EXISTS" == "true" ]; then
+              echo "Image $FULL_IMAGE already exists in ghcr.io, skipping build and push"
+              continue
+            fi
+          
+            # Build and push the image to ghcr.io
+            pushd "$dockerfile_dir" > /dev/null
+            make all DOCKER_BUILD_ORG=$DOCKER_BUILD_ORG
+            popd > /dev/null
           done < <(find . -type f -name Dockerfile -exec dirname {} \; | sort -u)
