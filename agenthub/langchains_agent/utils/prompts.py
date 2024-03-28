@@ -84,7 +84,6 @@ actions are all "think" actions, you should consider taking a different action.
 
 Notes:
 * your environment is Debian Linux. You can install software with `apt`
-* you can use `git commit` to stash your work, but you don't have access to a remote repository
 * your working directory will not change, even if you run `cd`. All commands will be run in the `/workspace` directory.
 * don't run interactive commands, or commands that don't return (e.g. `node server.js`). You may run commands in the background (e.g. `node server.js &`)
 
