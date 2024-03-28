@@ -95,3 +95,31 @@
 .input-box button:hover {
   background-color: transparent;
 }
+.custom-file-input {
+  display: inline-block;
+  padding: 10px 20px;
+  font-size: 16px;
+  font-weight: bold;
+  color: white;
+  background-color: rgb(62, 62, 62);
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.custom-file-input:hover {
+  background-color: rgb(70, 70, 70);
+}
+
+.custom-file-input input {
+  display: none;
+}
+.selected-directory {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 20px;
+  background-color: rgb(62, 62, 62);
+}
+.selected-directory > button:hover {
+  text-decoration: underline;
+}
