@@ -8,6 +8,7 @@ from .base import ExecutableAction
 @dataclass
 class BrowseURLAction(ExecutableAction):
     url: str
+    action: str = "browse"
 
     def run(self, *args, **kwargs) -> BrowserOutputObservation:
         try:

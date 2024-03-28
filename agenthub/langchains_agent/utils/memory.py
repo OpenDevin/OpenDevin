@@ -49,6 +49,7 @@ class LongTermMemory:
         self.thought_idx = 0
 
     def add_event(self, event):
+        print(event)
         doc = Document(
             text=json.dumps(event),
             doc_id=str(self.thought_idx),

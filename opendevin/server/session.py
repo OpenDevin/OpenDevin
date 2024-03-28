@@ -1,20 +1,12 @@
 import os
 import asyncio
-from typing import Optional, Dict, Type
+from typing import Optional
 
 from fastapi import WebSocketDisconnect
 
 from opendevin.action import (
     Action,
     NullAction,
-    CmdRunAction,
-    CmdKillAction,
-    BrowseURLAction,
-    FileReadAction,
-    FileWriteAction,
-    AgentRecallAction,
-    AgentThinkAction,
-    AgentFinishAction,
 )
 from opendevin.agent import Agent
 from opendevin.controller import AgentController
@@ -24,37 +16,8 @@ from opendevin.observation import (
     UserMessageObservation
 )
 
-# NOTE: this is a temporary solution - but hopefully we can use Action/Observation throughout the codebase
-ACTION_TYPE_TO_CLASS: Dict[str, Type[Action]] = {
-    "run": CmdRunAction,
-    "kill": CmdKillAction,
-    "browse": BrowseURLAction,
-    "read": FileReadAction,
-    "write": FileWriteAction,
-    "recall": AgentRecallAction,
-    "think": AgentThinkAction,
-    "finish": AgentFinishAction,
-}
-
-
 DEFAULT_WORKSPACE_DIR = os.getenv("WORKSPACE_DIR", os.path.join(os.getcwd(), "workspace"))
 LLM_MODEL = os.getenv("LLM_MODEL", "gpt-4-0125-preview")
-
-def parse_event(data):
-    if "action" not in data:
-        return None
-    action = data["action"]
-    args = {}
-    if "args" in data:
-        args = data["args"]
-    message = None
-    if "message" in data:
-        message = data["message"]
-    return {
-        "action": action,
-        "args": args,
-        "message": message,
-    }
 
 class Session:
     def __init__(self, websocket):
@@ -87,25 +50,22 @@ class Session:
                     await self.send_error("Invalid JSON")
                     continue
 
-                event = parse_event(data)
-                if event is None:
+                # TODO: we only need to implement user message for now
+                # since even Devin does not support having the user taking other
+                # actions (e.g., edit files) while the agent is running
+                action = data.get("action", None)
+                if action is None:
                     await self.send_error("Invalid event")
-                    continue
-                if event["action"] == "initialize":
-                    await self.create_controller(event)
-                elif event["action"] == "start":
-                    await self.start_task(event)
+                elif self.controller is None:
+                    await self.send_error("No agent started. Please wait a second...")
+                elif action == "initialize":
+                    await self.create_controller(data)
+                elif action == "start":
+                    await self.start_task(data)
+                elif action == "chat":
+                    self.controller.add_history(NullAction(), UserMessageObservation(data["message"]))
                 else:
-                    if self.controller is None:
-                        await self.send_error("No agent started. Please wait a second...")
-
-                    elif event["action"] == "chat":
-                        self.controller.add_history(NullAction(), UserMessageObservation(event["message"]))
-                    else:
-                        # TODO: we only need to implement user message for now
-                        # since even Devin does not support having the user taking other
-                        # actions (e.g., edit files) while the agent is running
-                        raise NotImplementedError
+                    raise NotImplementedError("action not implemented")
 
         except WebSocketDisconnect as e:
             self.websocket = None
@@ -145,33 +105,5 @@ class Session:
         self.agent_task = asyncio.create_task(self.controller.start_loop(task), name="agent loop")
 
     def on_agent_event(self, event: Observation | Action):
-        # FIXME: we need better serialization
         event_dict = event.to_dict()
-        if "action" in event_dict:
-            if event_dict["action"] == "CmdRunAction":
-                event_dict["action"] = "run"
-            elif event_dict["action"] == "CmdKillAction":
-                event_dict["action"] = "kill"
-            elif event_dict["action"] == "BrowseURLAction":
-                event_dict["action"] = "browse"
-            elif event_dict["action"] == "FileReadAction":
-                event_dict["action"] = "read"
-            elif event_dict["action"] == "FileWriteAction":
-                event_dict["action"] = "write"
-            elif event_dict["action"] == "AgentFinishAction":
-                event_dict["action"] = "finish"
-            elif event_dict["action"] == "AgentRecallAction":
-                event_dict["action"] = "recall"
-            elif event_dict["action"] == "AgentThinkAction":
-                event_dict["action"] = "think"
-        if "observation" in event_dict:
-            if event_dict["observation"] == "UserMessageObservation":
-                event_dict["observation"] = "chat"
-            elif event_dict["observation"] == "AgentMessageObservation":
-                event_dict["observation"] = "chat"
-            elif event_dict["observation"] == "CmdOutputObservation":
-                event_dict["observation"] = "run"
-            elif event_dict["observation"] == "FileReadObservation":
-                event_dict["observation"] = "read"
-
         asyncio.create_task(self.send(event_dict), name="send event in callback")

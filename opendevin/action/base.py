@@ -1,5 +1,4 @@
-from dataclasses import dataclass
-
+from dataclasses import dataclass, asdict
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -12,7 +11,12 @@ class Action:
         raise NotImplementedError
 
     def to_dict(self):
-        return {"action": self.__class__.__name__, "args": self.__dict__, "message": self.message}
+        d = asdict(self)
+        try:
+            v = d.pop('action')
+        except KeyError:
+            raise NotImplementedError(f'{self=} does not have action attribute set')
+        return {'action': v, "args": d}
 
     @property
     def executable(self) -> bool:
@@ -24,21 +28,25 @@ class Action:
 
 
 
+@dataclass
 class ExecutableAction(Action):
     @property
     def executable(self) -> bool:
         return True
 
 
+@dataclass
 class NotExecutableAction(Action):
     @property
     def executable(self) -> bool:
         return False
 
+@dataclass
 class NullAction(NotExecutableAction):
     """An action that does nothing.
     This is used when the agent need to receive user follow-up messages from the frontend.
     """
+    action: str = "null"
 
     @property
     def message(self) -> str:

@@ -3,25 +3,15 @@ from typing import List
 from opendevin.llm.llm import LLM
 from opendevin.agent import Agent
 from opendevin.state import State
-from opendevin.action import Action
 import agenthub.langchains_agent.utils.prompts as prompts
 from agenthub.langchains_agent.utils.monologue import Monologue
 from agenthub.langchains_agent.utils.memory import LongTermMemory
 
-from opendevin.action import (
-    NullAction,
-    CmdRunAction,
-    CmdKillAction,
-    BrowseURLAction,
-    FileReadAction,
-    FileWriteAction,
-    AgentRecallAction,
-    AgentThinkAction,
-    AgentFinishAction,
-)
-from opendevin.observation import (
-    CmdOutputObservation,
-)
+from opendevin.action import action_class_initialize_dispatcher, Action, ACTION_TYPE_TO_CLASS, AgentThinkAction
+
+# from opendevin.observation import (
+#     CmdOutputObservation,
+# )
 
 
 MAX_MONOLOGUE_LENGTH = 20000
@@ -66,6 +56,9 @@ INITIAL_THOUGHTS = [
 ]
 
 
+MAX_OUTPUT_LENGTH = 5000
+MAX_MONOLOGUE_LENGTH = 20000
+
 class LangchainsAgent(Agent):
     _initialized = False
 
@@ -96,27 +89,18 @@ class LangchainsAgent(Agent):
         for thought in INITIAL_THOUGHTS:
             thought = thought.replace("$TASK", self.instruction)
             if next_is_output:
-                d = {"action": "output", "args": {"output": thought}}
+                self._add_event({"action": "output", "args": {"output": thought}})
                 next_is_output = False
             else:
-                if thought.startswith("RUN"):
-                    command = thought.split("RUN ")[1]
-                    d = {"action": "run", "args": {"command": command}}
-                    next_is_output = True
-
-                elif thought.startswith("RECALL"):
-                    query = thought.split("RECALL ")[1]
-                    d = {"action": "recall", "args": {"query": query}}
-                    next_is_output = True
-
-                elif thought.startswith("BROWSE"):
-                    url = thought.split("BROWSE ")[1]
-                    d = {"action": "browse", "args": {"url": url}}
-                    next_is_output = True
+                # TODO this is not really robust
+                # TODO this also doesn't handle multiple arguments
+                action, _, argument = thought.partition(" ")
+                if (action := action.lower()) in ACTION_TYPE_TO_CLASS:
+                    d = action_class_initialize_dispatcher(action, argument)
                 else:
-                    d = {"action": "think", "args": {"thought": thought}}
-
-            self._add_event(d)
+                    d = AgentThinkAction(thought)
+                self._add_event(d.to_dict())
+                next_is_output = True
         self._initialized = True
 
     def step(self, state: State) -> Action:
@@ -126,40 +110,8 @@ class LangchainsAgent(Agent):
 
         # Translate state to action_dict
         for prev_action, obs in state.updated_info:
-            d = None
-            if isinstance(obs, CmdOutputObservation):
-                if obs.error:
-                    d = {"action": "error", "args": {"output": obs.content}}
-                else:
-                    d = {"action": "output", "args": {"output": obs.content}}
-            else:
-                d = {"action": "output", "args": {"output": obs.content}}
-            if d is not None:
-                self._add_event(d)
-
-            d = None
-            if isinstance(prev_action, CmdRunAction):
-                d = {"action": "run", "args": {"command": prev_action.command}}
-            elif isinstance(prev_action, CmdKillAction):
-                d = {"action": "kill", "args": {"id": prev_action.id}}
-            elif isinstance(prev_action, BrowseURLAction):
-                d = {"action": "browse", "args": {"url": prev_action.url}}
-            elif isinstance(prev_action, FileReadAction):
-                d = {"action": "read", "args": {"file": prev_action.path}}
-            elif isinstance(prev_action, FileWriteAction):
-                d = {"action": "write", "args": {"file": prev_action.path, "content": prev_action.contents}}
-            elif isinstance(prev_action, AgentRecallAction):
-                d = {"action": "recall", "args": {"query": prev_action.query}}
-            elif isinstance(prev_action, AgentThinkAction):
-                d = {"action": "think", "args": {"thought": prev_action.thought}}
-            elif isinstance(prev_action, AgentFinishAction):
-                d = {"action": "finish"}
-            elif isinstance(prev_action, NullAction):
-                d = None
-            else:
-                raise ValueError(f"Unknown action type: {prev_action}")
-            if d is not None:
-                self._add_event(d)
+            self._add_event(obs.to_dict())
+            self._add_event(prev_action.to_dict())
 
         state.updated_info = []
 

@@ -12,6 +12,7 @@ if TYPE_CHECKING:
 class CmdRunAction(ExecutableAction):
     command: str
     background: bool = False
+    action: str = "run"
 
     def run(self, controller: "AgentController") -> "CmdOutputObservation":
         return controller.command_manager.run_command(self.command, self.background)
@@ -23,6 +24,7 @@ class CmdRunAction(ExecutableAction):
 @dataclass
 class CmdKillAction(ExecutableAction):
     id: int
+    action: str = "kill"
 
     def run(self, controller: "AgentController") -> "CmdOutputObservation":
         return controller.command_manager.kill_command(self.id)

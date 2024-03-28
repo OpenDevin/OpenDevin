@@ -1,6 +1,5 @@
-import copy
 from typing import List
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 
 
 @dataclass
@@ -16,14 +15,12 @@ class Observation:
 
     def to_dict(self) -> dict:
         """Converts the observation to a dictionary."""
-        extras = copy.deepcopy(self.__dict__)
-        extras.pop("content", None)
-        return {
-            "observation": self.__class__.__name__,
-            "content": self.content,
-            "extras": extras,
-            "message": self.message,
-        }
+        d = asdict(self)
+        try:
+            v = d.pop('observation')
+        except KeyError:
+            raise NotImplementedError(f'{self=} does not have observation attribute set')
+        return {'observation': v, "args": d}
 
     @property
     def message(self) -> str:
@@ -40,6 +37,7 @@ class CmdOutputObservation(Observation):
     command_id: int
     command: str
     exit_code: int = 0
+    observation: str = "output"
 
     @property
     def error(self) -> bool:
@@ -56,6 +54,7 @@ class FileReadObservation(Observation):
     """
 
     path: str
+    observation: str = "read"
 
     @property
     def message(self) -> str:
@@ -82,6 +81,7 @@ class BrowserOutputObservation(Observation):
     url: str
     status_code: int = 200
     error: bool = False
+    observation: str = "browse"
 
     @property
     def message(self) -> str:
@@ -95,11 +95,11 @@ class UserMessageObservation(Observation):
     """
 
     role: str = "user"
+    observation: str = "chat"
 
     @property
     def message(self) -> str:
         return ""
-
 
 @dataclass
 class AgentMessageObservation(Observation):
@@ -108,11 +108,11 @@ class AgentMessageObservation(Observation):
     """
 
     role: str = "assistant"
+    observation: str = "chat"
 
     @property
     def message(self) -> str:
         return ""
-
 
 @dataclass
 class AgentRecallObservation(Observation):
@@ -122,17 +122,19 @@ class AgentRecallObservation(Observation):
 
     memories: List[str]
     role: str = "assistant"
+    observation: str = "recall"
 
     @property
     def message(self) -> str:
         return "The agent recalled memories."
-
 
 @dataclass
 class AgentErrorObservation(Observation):
     """
     This data class represents an error encountered by the agent.
     """
+
+    observation: str = "error"
 
     @property
     def message(self) -> str:
@@ -144,6 +146,8 @@ class NullObservation(Observation):
     This data class represents a null observation.
     This is used when the produced action is NOT executable.
     """
+
+    observation: str = "null"
 
     @property
     def message(self) -> str:

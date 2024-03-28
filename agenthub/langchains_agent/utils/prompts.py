@@ -1,6 +1,6 @@
 import os
 
-from typing import List, Dict, Type
+from typing import List
 
 from langchain_core.pydantic_v1 import BaseModel
 from langchain.prompts import PromptTemplate
@@ -14,33 +14,11 @@ from . import json
 
 from opendevin.action import (
     Action,
-    CmdRunAction,
-    CmdKillAction,
-    BrowseURLAction,
-    FileReadAction,
-    FileWriteAction,
-    AgentRecallAction,
-    AgentThinkAction,
-    AgentFinishAction,
-    AgentSummarizeAction,
+    action_class_initialize_dispatcher,
 )
 from opendevin.observation import (
     CmdOutputObservation,
 )
-
-
-ACTION_TYPE_TO_CLASS: Dict[str, Type[Action]] = {
-    "run": CmdRunAction,
-    "kill": CmdKillAction,
-    "browse": BrowseURLAction,
-    "read": FileReadAction,
-    "write": FileWriteAction,
-    "recall": AgentRecallAction,
-    "think": AgentThinkAction,
-    "summarize": AgentSummarizeAction,
-    "finish": AgentFinishAction,
-}
-CLASS_TO_ACTION_TYPE: Dict[Type[Action], str] = {v: k for k, v in ACTION_TYPE_TO_CLASS.items()}
 
 ACTION_PROMPT = """
 You're a thoughtful robot. Your main task is to {task}.
@@ -165,15 +143,11 @@ def get_request_action_prompt(
 def parse_action_response(response: str) -> Action:
     parser = JsonOutputParser(pydantic_object=_ActionDict)
     action_dict = parser.parse(response)
-    if 'content' in action_dict:
-        # The LLM gets confused here. Might as well be robust
-        action_dict['contents'] = action_dict.pop('content')
-
-    action = ACTION_TYPE_TO_CLASS[action_dict["action"]](**action_dict["args"])
+    action = action_class_initialize_dispatcher(action_dict["action"], **action_dict["args"])
     return action
 
 def parse_summary_response(response: str) -> List[Action]:
     parser = JsonOutputParser(pydantic_object=NewMonologue)
     parsed = parser.parse(response)
-    #thoughts = [ACTION_TYPE_TO_CLASS[t['action']](**t['args']) for t in parsed['new_monologue']]
-    return parsed['new_monologue']
+    thoughts = [action_class_initialize_dispatcher(t["action"], **t["args"]) for t in parsed["new_monologue"]]
+    return thoughts
