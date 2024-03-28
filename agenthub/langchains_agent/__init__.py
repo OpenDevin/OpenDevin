@@ -83,18 +83,18 @@ class LangchainsAgent(Agent):
         if self.monologue.get_total_length() > MAX_MONOLOGUE_LENGTH:
             self.monologue.condense(self.llm)
 
-    def _initialize(self):
+    def _initialize(self, task):
         if self._initialized:
             return
 
-        if self.instruction is None or self.instruction == "":
+        if task is None or task == "":
             raise ValueError("Instruction must be provided")
         self.monologue = Monologue()
         self.memory = LongTermMemory()
 
         next_is_output = False
         for thought in INITIAL_THOUGHTS:
-            thought = thought.replace("$TASK", self.instruction)
+            thought = thought.replace("$TASK", task)
             if next_is_output:
                 d = {"action": "output", "args": {"output": thought}}
                 next_is_output = False
@@ -120,7 +120,7 @@ class LangchainsAgent(Agent):
         self._initialized = True
 
     def step(self, state: State) -> Action:
-        self._initialize()
+        self._initialize(state.task)
         # TODO: make langchains agent use Action & Observation
         # completly from ground up
 
@@ -164,7 +164,7 @@ class LangchainsAgent(Agent):
         state.updated_info = []
 
         prompt = prompts.get_request_action_prompt(
-            self.instruction,
+            state.task,
             self.monologue.get_thoughts(),
             state.background_commands_obs,
         )
