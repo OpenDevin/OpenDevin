@@ -2,7 +2,7 @@
 
 This folder implements the [CodeAct idea](https://arxiv.org/abs/2402.13463) that relies on LLM to autonomously perform actions in a Bash shell. It requires more from the LLM itself: LLM needs to be capable enough to do all the stuff autonomously, instead of stuck in an infinite loop. 
 
-A minimalistic exmaple can be found at [research/codeact/examples/run_flask_server_with_bash.py](./examples/run_flask_server_with_bash.py):
+A minimalistic example can be found at [research/codeact/examples/run_flask_server_with_bash.py](./examples/run_flask_server_with_bash.py):
 
 ```bash
 mkdir workspace

@@ -42,7 +42,7 @@ WORKSPACE_DIR=/path/to/your/workspace # Default path to model's workspace
 ```
 
 ## API Schema
-There are two types of messages that can be sent to, or recieved from, the server:
+There are two types of messages that can be sent to, or received from, the server:
 * Actions
 * Observations
 
