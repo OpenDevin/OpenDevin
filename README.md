@@ -109,6 +109,138 @@ An MVP demo is urgent for us. Here are the most important things to do:
 
 After finishing building the MVP, we will move towards research in different topics, including foundation models, specialist capabilities, evaluation, agent studies, etc.
 
+## Contributors
+Thanks goes to these wonderful contributors ([emoji key](https://allcontributors.org/docs/en/emoji-key) following [all-contributors](https://github.com/all-contributors/all-contributors) specification):
+
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+
+<table>
+  <tbody>
+    <tr>
+      <td align="center"><a href="https://github.com/rbren"><img src="https://avatars.githubusercontent.com/rbren?v=4&s=100" width="100px;" alt="rbren"/><br /><sub><b>rbren</b></sub></a><br />
+      <a href="https://github.com/OpenDevin/OpenDevin/commits?author=rbren" title="Code">💻</a>
+      <a href="https://github.com/OpenDevin/OpenDevin/commits?author=rbren" title="Documentation">📖</a>
+      <a href="#infra-rbren" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a>
+      <a href="#maintenance-rbren" title="Maintenance">🚧</a>
+      <a href="#ideas-rbren" title="Ideas & Planning">🤔</a>
+      <a href="#review-rbren" title="Reviewed Pull Requests">👀</a>
+      <a href="#tool-rbren" title="Tools">🔧</a>
+      <a href="#test-rbren" title="Tests">⚠️</a>
+      <a href="#bug-rbren" title="Bug reports">🐛</a></td>
+      <td align="center"><a href="https://github.com/xingyaoww"><img src="https://avatars.githubusercontent.com/xingyaoww?v=4&s=100" width="100px;" alt="xingyaoww"/><br /><sub><b>xingyaoww</b></sub></a><br />
+      <a href="https://github.com/OpenDevin/OpenDevin/commits?author=xingyaoww" title="Code">💻</a>
+      <a href="https://github.com/OpenDevin/OpenDevin/commits?author=xingyaoww" title="Documentation">📖</a>
+      <a href="#design-xingyaoww" title="Design">🎨</a>
+      <a href="#ideas-xingyaoww" title="Ideas & Planning">🤔</a>
+      <a href="#projectManagement-xingyaoww" title="Project Management">📆</a>
+      <a href="#research-xingyaoww" title="Research">🔬</a></td>
+      <td align="center"><a href="https://github.com/yimothysu"><img src="https://avatars.githubusercontent.com/yimothysu?v=4&s=100" width="100px;" alt="yimothysu"/><br /><sub><b>yimothysu</b></sub></a><br />
+      <a href="https://github.com/OpenDevin/OpenDevin/commits?author=yimothysu" title="Code">💻</a>
+      <a href="#design-yimothysu" title="Design">🎨</a>
+      <a href="#infra-yimothysu" title="Infrastructure">🚇</a>
+      <a href="#doc-yimothysu" title="Documentation">📖</a>
+      <a href="#tool-yimothysu" title="Tools">🔧</a></td>
+      <td align="center"><a href="https://github.com/huybery"><img src="https://avatars.githubusercontent.com/huybery?v=4&s=100" width="100px;" alt="huybery"/><br /><sub><b>huybery</b></sub></a><br />
+      <a href="https://github.com/OpenDevin/OpenDevin/commits?author=huybery" title="Code">💻</a>
+      <a href="#design-huybery" title="Design">🎨</a>
+      <a href="#doc-huybery" title="Documentation">📖</a></td>
+      <td align="center"><a href="https://github.com/yufansong"><img src="https://avatars.githubusercontent.com/yufansong?v=4&s=100" width="100px;" alt="yufansong"/><br /><sub><b>yufansong</b></sub></a><br />
+      <a href="https://github.com/OpenDevin/OpenDevin/commits?author=yufansong" title="Code">💻</a>
+      <a href="#doc-yufansong" title="Documentation">📖</a>
+      <a href="#research-yufansong" title="Research">🔬</a></td>
+    </tr>
+    <tr>
+      <td align="center"><a href="https://github.com/iFurySt"><img src="https://avatars.githubusercontent.com/iFurySt?v=4&s=100" width="100px;" alt="iFurySt"/><br /><sub><b>iFurySt</b></sub></a><br />
+      <a href="https://github.com/OpenDevin/OpenDevin/commits?author=iFurySt" title="Code">💻</a>
+      <a href="#infra-iFurySt" title="Infrastructure">🚇</a>
+      <a href="#security-iFurySt" title="Security">🛡️</a></td>
+      <td align="center"><a href="https://github.com/JustinLin610"><img src="https://avatars.githubusercontent.com/JustinLin610?v=4&s=100" width="100px;" alt="JustinLin610"/><br /><sub><b>JustinLin610</b></sub></a><br />
+      <a href="#doc-JustinLin610" title="Documentation">📖</a>
+      <a href="#projectManagement-JustinLin610" title="Project Management">📆</a></td>
+      <td align="center"><a href="https://github.com/geohotstan"><img src="https://avatars.githubusercontent.com/geohotstan?v=4&s=100" width="100px;" alt="geohotstan"/><br /><sub><b>geohotstan</b></sub></a><br />
+      <a href="https://github.com/OpenDevin/OpenDevin/commits?author=geohotstan" title="Code">💻</a>
+      <a href="#tool-geohotstan" title="Tools">🔧</a>
+      <a href="#test-geohotstan" title="Tests">⚠️</a></td>
+      <td align="center"><a href="https://github.com/jojeyh"><img src="https://avatars.githubusercontent.com/jojeyh?v=4&s=100" width="100px;" alt="jojeyh"/><br /><sub><b>jojeyh</b></sub></a><br />
+      <a href="https://github.com/OpenDevin/OpenDevin/commits?author=jojeyh" title="Code">💻</a>
+      <a href="#bug-jojeyh" title="Bug reports">🐛</a>
+      <a href="#infra-jojeyh" title="Infrastructure">🚇</a></td>
+      <td align="center"><a href="https://github.com/zch-cc"><img src="https://avatars.githubusercontent.com/zch-cc?v=4&s=100" width="100px;" alt="zch-cc"/><br /><sub><b>zch-cc</b></sub></a><br />
+      <a href="https://github.com/OpenDevin/OpenDevin/commits?author=zch-cc" title="Code">💻</a>
+      <a href="#test-zch-cc" title="Tests">⚠️</a>
+      <a href="#doc-zch-cc" title="Documentation">📖</a></td>
+    </tr>
+    <tr>
+      <td align="center"><a href="https://github.com/powerzbt"><img src="https://avatars.githubusercontent.com/powerzbt?v=4&s=100" width="100px;" alt="powerzbt"/><br /><sub><b>powerzbt</b></sub></a><br />
+      <a href="#code-powerzbt" title="Code">💻</a>
+      <a href="#promotion-powerzbt" title="Promotion">📣</a></td>
+      <td align="center"><a href="https://github.com/libowen2121"><img src="https://avatars.githubusercontent.com/libowen2121?v=4&s=100" width="100px;" alt="libowen2121"/><br /><sub><b>libowen2121</b></sub></a><br />
+      <a href="#research-libowen2121" title="Research">🔬</a>
+      <a href="#doc-libowen2121" title="Documentation">📖</a></td>
+      <td align="center"><a href="https://github.com/Jiaxin-Pei"><img src="https://avatars.githubusercontent.com/Jiaxin-Pei?v=4&s=100" width="100px;" alt="Jiaxin-Pei"/><br /><sub><b>Jiaxin-Pei</b></sub></a><br />
+      <a href="https://github.com/OpenDevin/OpenDevin/commits?author=Jiaxin-Pei" title="Code">💻</a>
+      <a href="#data-Jiaxin-Pei" title="Data">🔣</a></td>
+      <td align="center"><a href="https://github.com/eltociear"><img src="https://avatars.githubusercontent.com/eltociear?v=4&s=100" width="100px;" alt="eltociear"/><br /><sub><b>eltociear</b></sub></a><br />
+      <a href="https://github.com/OpenDevin/OpenDevin/commits?author=eltociear" title="Documentation">📖</a>
+      <a href="#design-eltociear" title="Design">🎨</a></td>
+      <td align="center"><a href="https://github.com/Ghat0tkach"><img src="https://avatars.githubusercontent.com/Ghat0tkach?v=4&s=100" width="100px;" alt="Ghat0tkach"/><br /><sub><b>Ghat0tkach</b></sub></a><br />
+      <a href="https://github.com/OpenDevin/OpenDevin/commits?author=Ghat0tkach" title="Code">💻</a>
+      <a href="#design-Ghat0tkach" title="Design">🎨</a></td>
+    </tr>
+    <tr>
+      <td align="center"><a href="https://github.com/suryavirkapur"><img src="https://avatars.githubusercontent.com/suryavirkapur?v=4&s=100" width="100px;" alt="suryavirkapur"/><br /><sub><b>suryavirkapur</b></sub></a><br />
+      <a href="https://github.com/OpenDevin/OpenDevin/commits?author=suryavirkapur" title="Code">💻</a>
+      <a href="#infra-suryavirkapur" title="Infrastructure">🚇</a></td>
+      <td align="center"><a href="https://github.com/neubig"><img src="https://avatars.githubusercontent.com/neubig?v=4&s=100" width="100px;" alt="neubig"/><br /><sub><b>neubig</b></sub></a><br />
+      <a href="https://github.com/OpenDevin/OpenDevin/commits?author=neubig" title="Code">💻</a>
+      <a href="#ideas-neubig" title="Ideas & Planning">🤔</a></td>
+      <td align="center"><a href="https://github.com/asadm"><img src="https://avatars.githubusercontent.com/asadm?v=4&s=100" width="100px;" alt="asadm"/><br /><sub><b>asadm</b></sub></a><br />
+      <a href="https://github.com/OpenDevin/OpenDevin/commits?author=asadm" title="Business Development">💼</a>
+      <a href="#legal-asadm" title="Legal">⚖️</a></td>
+      <td align="center"><a href="https://github.com/xiangyue9607"><img src="https://avatars.githubusercontent.com/xiangyue9607?v=4&s=100" width="100px;" alt="xiangyue9607"/><br /><sub><b>xiangyue9607</b></sub></a><br />
+      <a href="https://github.com/OpenDevin/OpenDevin/commits?author=xiangyue9607" title="Code">💻</a>
+      <a href="#projectManagement-xiangyue9607" title="Project Management">📆</a></td>
+      <td align="center"><a href="https://github.com/sikgyu"><img src="https://avatars.githubusercontent.com/sikgyu?v=4&s=100" width="100px;" alt="sikgyu"/><br /><sub><b>sikgyu</b></sub></a><br />
+      <a href="https://github.com/OpenDevin/OpenDevin/commits?author=sikgyu" title="Code">💻</a>
+      <a href="#bug-sikgyu" title="Bug reports">🐛</a></td>
+    </tr>
+    <tr>
+      <td align="center"><a href="https://github.com/penberg"><img src="https://avatars.githubusercontent.com/penberg?v=4&s=100" width="100px;" alt="penberg"/><br /><sub><b>penberg</b></sub></a><br />
+      <a href="https://github.com/OpenDevin/OpenDevin/commits?author=penberg" title="Code">💻</a>
+      <a href="#infra-penberg" title="Infrastructure">🚇</a></td>
+      <td align="center"><a href="https://github.com/enyst"><img src="https://avatars.githubusercontent.com/enyst?v=4&s=100" width="100px;" alt="enyst"/><br /><sub><b>enyst</b></sub></a><br />
+      <a href="#ideas-enyst" title="Ideas & Planning">🤔</a>
+      <a href="#research-enyst" title="Research">🔬</a></td>
+      <td align="center"><a href="https://github.com/RohitX0X"><img src="https://avatars.githubusercontent.com/RohitX0X?v=4&s=100" width="100px;" alt="RohitX0X"/><br /><sub><b>RohitX0X</b></sub></a><br />
+      <a href="#code-RohitX0X" title="Code">💻</a>
+      <a href="#bug-RohitX0X" title="Bug reports">🐛</a></td>
+      <td align="center"><a href="https://github.com/dincengincan"><img src="https://avatars.githubusercontent.com/dincengincan?v=4&s=100" width="100px;" alt="dincengincan"/><br /><sub><b>dincengincan</b></sub></a><br />
+      <a href="#design-dincengincan" title="Design">🎨</a>
+      <a href="#doc-dincengincan" title="Documentation">📖</a></td>
+      <td align="center"><a href="https://github.com/Aadya1603"><img src="https://avatars.githubusercontent.com/Aadya1603?v=4&s=100" width="100px;" alt="Aadya1603"/><br /><sub><b>Aadya1603</b></sub></a><br />
+      <a href="#code-Aadya1603" title="Code">💻</a>
+      <a href="#infra-Aadya1603" title="Infrastructure">🚇</a></td>
+    </tr>
+    <tr>
+      <td align="center"><a href="https://github.com/h9-tect"><img src="https://avatars.githubusercontent.com/h9-tect?v=4&s=100" width="100px;" alt="h9-tect"/><br /><sub><b>h9-tect</b></sub></a><br />
+      <a href="https://github.com/OpenDevin/OpenDevin/commits?author=h9-tect" title="Code">💻</a>
+      <a href="#ideas-h9-tect" title="Ideas & Planning">🤔</a></td>
+      <td align="center"><a href="https://github.com/Rocchegiacomo"><img src="https://avatars.githubusercontent.com/Rocchegiacomo?v=4&s=100" width="100px;" alt="Rocchegiacomo"/><br /><sub><b>Rocchegiacomo</b></sub></a><br />
+      <a href="#bug-Rocchegiacomo" title="Bug reports">🐛</a>
+      <a href="#maintenance-Rocchegiacomo" title="Maintenance">🚧</a></td>
+
+    </tr>
+  </tbody>
+</table>
+
+
+<!-- markdownlint-restore -->
+<!-- prettier-ignore-end -->
+
+<!-- ALL-CONTRIBUTORS-LIST:END -->
+
 
 ## How to Contribute
 
