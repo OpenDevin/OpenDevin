@@ -1,7 +1,8 @@
 import asyncio
-from typing import List, Callable, Tuple
+from typing import List, Callable
 import traceback
 
+from opendevin.plan import Plan
 from opendevin.state import State
 from opendevin.agent import Agent
 from opendevin.action import (
@@ -10,13 +11,14 @@ from opendevin.action import (
     FileReadAction,
     FileWriteAction,
     AgentFinishAction,
+    AddSubtaskAction,
+    ModifySubtaskAction
 )
 from opendevin.observation import (
     Observation,
     AgentErrorObservation,
     NullObservation
 )
-
 
 from .command_manager import CommandManager
 
@@ -36,27 +38,26 @@ class AgentController:
         self.workdir = workdir
         self.command_manager = CommandManager(workdir)
         self.callbacks = callbacks
-        self.state_updated_info: List[Tuple[Action, Observation]] = []
 
-    def get_current_state(self) -> State:
-        # update observations & actions
-        state = State(
-            background_commands_obs=self.command_manager.get_background_obs(),
-            updated_info=self.state_updated_info,
-        )
-        self.state_updated_info = []
-        return state
+    def update_state_for_step(self, i):
+        self.state.iteration = i
+        self.state.background_commands_obs = self.command_manager.get_background_obs()
+
+    def update_state_after_step(self):
+        self.state.updated_info = []
 
     def add_history(self, action: Action, observation: Observation):
         if not isinstance(action, Action):
             raise ValueError("action must be an instance of Action")
         if not isinstance(observation, Observation):
             raise ValueError("observation must be an instance of Observation")
-        self.state_updated_info.append((action, observation))
+        self.state.history.append((action, observation))
+        self.state.updated_info.append((action, observation))
 
-    async def start_loop(self, task_instruction: str):
+    async def start_loop(self, task: str):
         finished = False
-        self.agent.instruction = task_instruction
+        plan = Plan(task)
+        self.state = State(plan)
         for i in range(self.max_iterations):
             try:
                 finished = await self.step(i)
@@ -78,16 +79,19 @@ class AgentController:
             await self._run_callbacks(obs)
             print_with_indent("\nBACKGROUND LOG:\n%s" % obs)
 
-        state: State = self.get_current_state()
+        self.update_state_for_step(i)
         action: Action = NullAction()
         observation: Observation = NullObservation("")
         try:
-            action = self.agent.step(state)
+            action = self.agent.step(self.state)
+            if action is None:
+                raise ValueError("Agent must return an action")
             print_with_indent("\nACTION:\n%s" % action)
         except Exception as e:
             observation = AgentErrorObservation(str(e))
             print_with_indent("\nAGENT ERROR:\n%s" % observation)
             traceback.print_exc()
+        self.update_state_after_step()
 
         await self._run_callbacks(action)
 
@@ -100,6 +104,10 @@ class AgentController:
             _kwargs["base_path"] = self.workdir
             action = action_cls(**_kwargs)
             print(action, flush=True)
+        if isinstance(action, AddSubtaskAction):
+            self.state.plan.add_subtask(action.parent, action.goal)
+        elif isinstance(action, ModifySubtaskAction):
+            self.state.plan.set_subtask_state(action.id, action.state)
         if action.executable:
             try:
                 observation = action.run(self)

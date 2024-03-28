@@ -38,13 +38,17 @@ export PYTHONPATH="$PYTHONPATH:$SCRIPT_DIR/../../"
 declare -A directory_class_pairs=(
     [langchains_agent]="LangchainsAgent"
     [codeact_agent]="CodeActAgent"
+    [planner_agent]="PlannerAgent"
 )
 
 
-# for each agent 
-for agent_dir in $(find . -type d -name '*agent'); do
+# for each agent
+for agent_dir in ./agenthub/*_agent; do
   agent=$(basename "$agent_dir")
   # iterate over cases dir
+  if [[ -n $TEST_AGENT && $agent != $TEST_AGENT ]]; then
+    continue
+  fi
   for case in $(ls $CASES_DIR); do
     # run the case
     if [[ -n $TEST_CASE && $case != $TEST_CASE ]]; then

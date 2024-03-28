@@ -60,23 +60,18 @@ class CodeActAgent(Agent):
     ) -> None:
         """
         Initializes a new instance of the CodeActAgent class.
-
-        Parameters:
-        - instruction (str): The instruction for the agent to execute.
-        - max_steps (int): The maximum number of steps to run the agent.
         """
         super().__init__(llm)
         self.messages: List[Mapping[str, str]] = []
-        self.instruction: str = ""
 
     def step(self, state: State) -> Action:
         if len(self.messages) == 0:
-            assert self.instruction, "Expecting instruction to be set"
+            assert state.plan.main_goal, "Expecting instruction to be set"
             self.messages = [
                 {"role": "system", "content": SYSTEM_MESSAGE},
-                {"role": "user", "content": self.instruction},
+                {"role": "user", "content": state.plan.main_goal},
             ]
-            print(colored("===USER:===\n" + self.instruction, "green"))
+            print(colored("===USER:===\n" + state.plan.main_goal, "green"))
         updated_info = state.updated_info
         if updated_info:
             for prev_action, obs in updated_info:
