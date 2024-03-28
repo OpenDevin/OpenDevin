@@ -74,7 +74,6 @@ class BackgroundCommand:
         return (logs + last_remains).decode("utf-8")
 
     def kill(self):
-        # FIXME: this doesn't actually kill the process!
         self.result.output.close()
 
 
@@ -165,10 +164,26 @@ class DockerInteractive:
         self.cur_background_id += 1
         return bg_cmd
 
+    def get_pid(self, bg_cmd):
+        exec_result = self.container.exec_run("ps aux")
+        processes = exec_result.output.decode('utf-8').splitlines()
+        cmd = " ".join(self.get_exec_cmd(bg_cmd.command))
+
+        for process in processes:
+            if cmd in process:
+                pid = process.split()[1] # second column is the pid
+                return pid
+        return None
+
     def kill_background(self, id: int) -> BackgroundCommand:
         if id not in self.background_commands:
             raise ValueError("Invalid background command id")
         bg_cmd = self.background_commands[id]
+        pid = self.get_pid(bg_cmd)
+        if pid is not None:
+            self.container.exec_run(
+                f"kill -9 {pid}", workdir="/workspace"
+            )
         bg_cmd.kill()
         self.background_commands.pop(id)
         return bg_cmd
