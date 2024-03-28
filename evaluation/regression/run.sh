@@ -1,5 +1,4 @@
 #!/bin/bash
-set -eo pipefail
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 CASES_DIR=$SCRIPT_DIR/cases
@@ -40,33 +39,57 @@ declare -A directory_class_pairs=(
     [codeact_agent]="CodeActAgent"
 )
 
+# Initialize counters for successful and failed test cases
+success_count=0
+fail_count=0
 
-# for each agent 
-for agent_dir in $(find . -type d -name '*agent'); do
-  agent=$(basename "$agent_dir")
-  # iterate over cases dir
-  for case in $(ls $CASES_DIR); do
-    # run the case
-    if [[ -n $TEST_CASE && $case != $TEST_CASE ]]; then
-      continue
-    fi
-    echo "Running case: $case"
-    case_dir=$CASES_DIR/$case
-    task=$(cat $case_dir/task.txt)
-    outputs_dir=$case_dir/outputs
-    agent_dir=$outputs_dir/$agent
-    echo "agent: $agent_dir"
-    # create agent dir if not exist 
-    if [ ! -d "$agent_dir" ]; then
-       mkdir -p $agent_dir 
-    fi
-    rm -rf $agent_dir/workspace
-    if [[ -d $case_dir/start ]]; then
-      cp -r $case_dir/start $agent_dir/workspace
-    else
-      mkdir $agent_dir/workspace
-    fi
-    python3 $SCRIPT_DIR/../../opendevin/main.py -d $agent_dir/workspace -c ${directory_class_pairs[$agent]} -t "${task}" -m $MODEL  | tee $agent_dir/logs.txt
-    rm -rf $agent_dir/workspace/.git
-  done
+# for each agent directory
+for agent_dir in $(find "$AGENTHUB_DIR" -type d -name '*agent'); do
+    agent=$(basename "$agent_dir")
+
+    # For each test case directory
+    for case_dir in $CASES_DIR/*; do
+        case=$(basename "$case_dir")
+
+        echo "Running case: $case"
+        task=$(<"$case_dir/task.txt")
+        outputs_dir="$case_dir/outputs/$agent"
+        echo "agent: $outputs_dir"
+
+        # Create agent directory if it does not exist
+        mkdir -p "$outputs_dir"
+
+        # Remove existing workspace and create new one
+        rm -rf "$outputs_dir/workspace"
+        mkdir "$outputs_dir/workspace"
+
+        # Copy start directory to workspace if it exists
+        if [ -d "$case_dir/start" ]; then
+            cp -r "$case_dir/start"/* "$outputs_dir/workspace"
+        fi
+
+        if [ -f "$case_dir/test.sh" ]; then
+            # Run main.py and capture output
+            if python3 "$SCRIPT_DIR/../../opendevin/main.py" -d "$outputs_dir/workspace" -c "${directory_class_pairs[$agent]}" -t "$task" -m "$MODEL" | tee "$outputs_dir/logs.txt"; then
+                # If main.py succeeds, run test.sh
+                if bash "$case_dir/test.sh" "$outputs_dir/workspace"; then
+                    ((success_count++))
+                else
+                    ((fail_count++))
+                fi
+            else
+                # If main.py fails, increment the fail count
+                ((fail_count++))
+            fi
+        else
+            # If main.py fails, increment the fail count
+            ((fail_count++))
+        fi
+        # Remove .git directory from workspace
+        rm -rf "$outputs_dir/workspace/.git"
+    done
 done
+
+# Display test results
+echo "Successful test cases: $success_count"
+echo "Failed test cases: $fail_count"
