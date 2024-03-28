@@ -58,6 +58,7 @@ function App(): JSX.Element {
       <div className="right-pane">
         <div className="workspace-heading">
           <p>OpenDevin Workspace</p>
+          <BannerSettings />
         </div>
         <div role="tablist" className="tabs tabs-bordered tabs-lg">
           {TAB_OPTIONS.map((tab) => (

@@ -1,4 +1,5 @@
 import socket from "../socket/socket";
+import { appendAssistantMessage } from "../state/chatSlice";
 import { setInitialized } from "../state/taskSlice";
 import store from "../store";
 
@@ -21,6 +22,7 @@ function changeSetting(setting: string, value: string): void {
   const eventString = JSON.stringify(event);
   socket.send(eventString);
   store.dispatch(setInitialized(false));
+  store.dispatch(appendAssistantMessage(`Changed ${setting} to "${value}"`));
 }
 
 export function changeModel(model: Model): void {
@@ -28,7 +30,7 @@ export function changeModel(model: Model): void {
 }
 
 export function changeAgent(agent: Agent): void {
-  changeSetting("agent", agent);
+  changeSetting("agent_cls", agent);
 }
 
 export function changeDirectory(directory: string): void {
