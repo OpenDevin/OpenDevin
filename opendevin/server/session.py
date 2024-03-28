@@ -1,28 +1,25 @@
-import os
 import asyncio
-from typing import Optional, Dict, Type
+import os
+from typing import Dict, Optional, Type
 
 from fastapi import WebSocketDisconnect
 
 from opendevin.action import (
     Action,
-    NullAction,
-    CmdRunAction,
-    CmdKillAction,
-    BrowseURLAction,
-    FileReadAction,
-    FileWriteAction,
+    AgentFinishAction,
     AgentRecallAction,
     AgentThinkAction,
-    AgentFinishAction,
+    BrowseURLAction,
+    CmdKillAction,
+    CmdRunAction,
+    FileReadAction,
+    FileWriteAction,
+    NullAction,
 )
 from opendevin.agent import Agent
 from opendevin.controller import AgentController
 from opendevin.llm.llm import LLM
-from opendevin.observation import (
-    Observation,
-    UserMessageObservation
-)
+from opendevin.observation import Observation, UserMessageObservation
 
 # NOTE: this is a temporary solution - but hopefully we can use Action/Observation throughout the codebase
 ACTION_TYPE_TO_CLASS: Dict[str, Type[Action]] = {
@@ -130,7 +127,12 @@ class Session:
         llm = LLM(model)
         AgentCls = Agent.get_cls(agent_cls)
         self.agent = AgentCls(llm)
-        self.controller = AgentController(self.agent, workdir=directory, callbacks=[self.on_agent_event])
+        try:
+            self.controller = AgentController(self.agent, workdir=directory, callbacks=[self.on_agent_event])
+        except Exception:
+            print("Error creating controller.")
+            await self.send_error("Error creating controller. Please check Docker is running using `docker ps`.")
+            return
         await self.send({"action": "initialize", "message": "Control loop started."})
 
     async def start_task(self, start_event):
