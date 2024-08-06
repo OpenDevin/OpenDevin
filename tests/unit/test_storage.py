@@ -1,5 +1,5 @@
-import os
 import shutil
+import tempfile
 
 import pytest
 
@@ -7,18 +7,23 @@ from opendevin.storage.local import LocalFileStore
 from opendevin.storage.memory import InMemoryFileStore
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def setup_env():
-    os.makedirs('./_test_files_tmp', exist_ok=True)
+    # Create a temporary directory
+    temp_dir = tempfile.mkdtemp(prefix='test_storage_')
 
-    yield
+    yield temp_dir
 
-    shutil.rmtree('./_test_files_tmp')
+    # Clean up
+    try:
+        shutil.rmtree(temp_dir)
+    except Exception as e:
+        print(f'Error cleaning up temporary directory {temp_dir}: {e}')
 
 
 def test_basic_fileops(setup_env):
     filename = 'test.txt'
-    for store in [LocalFileStore('./_test_files_tmp'), InMemoryFileStore()]:
+    for store in [LocalFileStore(setup_env), InMemoryFileStore()]:
         store.write(filename, 'Hello, world!')
         assert store.read(filename) == 'Hello, world!'
         assert store.list('') == [filename]
@@ -29,7 +34,7 @@ def test_basic_fileops(setup_env):
 
 def test_complex_path_fileops(setup_env):
     filenames = ['foo.bar.baz', './foo/bar/baz', 'foo/bar/baz', '/foo/bar/baz']
-    for store in [LocalFileStore('./_test_files_tmp'), InMemoryFileStore()]:
+    for store in [LocalFileStore(setup_env), InMemoryFileStore()]:
         for filename in filenames:
             store.write(filename, 'Hello, world!')
             assert store.read(filename) == 'Hello, world!'
@@ -39,7 +44,7 @@ def test_complex_path_fileops(setup_env):
 
 
 def test_list(setup_env):
-    for store in [LocalFileStore('./_test_files_tmp'), InMemoryFileStore()]:
+    for store in [LocalFileStore(setup_env), InMemoryFileStore()]:
         store.write('foo.txt', 'Hello, world!')
         store.write('bar.txt', 'Hello, world!')
         store.write('baz.txt', 'Hello, world!')
@@ -50,7 +55,7 @@ def test_list(setup_env):
 
 
 def test_deep_list(setup_env):
-    for store in [LocalFileStore('./_test_files_tmp'), InMemoryFileStore()]:
+    for store in [LocalFileStore(setup_env), InMemoryFileStore()]:
         store.write('foo/bar/baz.txt', 'Hello, world!')
         store.write('foo/bar/qux.txt', 'Hello, world!')
         store.write('foo/bar/quux.txt', 'Hello, world!')

@@ -52,8 +52,9 @@ echo "WORKSPACE_MOUNT_PATH: $WORKSPACE_MOUNT_PATH"
 
 # Ensure we're in the correct directory
 cd "$PROJECT_ROOT" || exit 1
-
-mkdir -p $WORKSPACE_BASE
+if [ ! -d "$WORKSPACE_BASE" ]; then
+  mkdir -p $WORKSPACE_BASE
+fi
 
 # use environmental variable if exists, otherwise use "ssh"
 SANDBOX_BOX_TYPE="${SANDBOX_TYPE:-ssh}"
@@ -203,7 +204,8 @@ regenerate_with_llm() {
     launch_http_server
   fi
 
-  rm -rf $WORKSPACE_BASE/*
+  rm -rf $WORKSPACE_BASE
+  mkdir -p $WORKSPACE_BASE
   if [ -d "$SCRIPT_DIR/workspace/$test_name" ]; then
     cp -r "$SCRIPT_DIR/workspace/$test_name"/* $WORKSPACE_BASE
   fi
@@ -245,7 +247,7 @@ if [ "$num_of_tests" -ne "${#test_names[@]}" ]; then
 fi
 
 rm -rf logs
-rm -rf $WORKSPACE_BASE/*
+rm -rf $WORKSPACE_BASE
 for ((i = 0; i < num_of_tests; i++)); do
   task=${tasks[i]}
   test_name=${test_names[i]}
@@ -264,7 +266,8 @@ for ((i = 0; i < num_of_tests; i++)); do
     fi
 
     echo -e "\n\n\n\n========STEP 1: Running $test_name for $agent========\n\n\n\n"
-    rm -rf $WORKSPACE_BASE/*
+    rm -rf $WORKSPACE_BASE
+    mkdir -p $WORKSPACE_BASE
     if [ -d "$SCRIPT_DIR/workspace/$test_name" ]; then
       cp -r "$SCRIPT_DIR/workspace/$test_name"/* $WORKSPACE_BASE
     fi

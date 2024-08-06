@@ -38,6 +38,10 @@ class AgentState(str, Enum):
     """An error occurred during the task.
     """
 
+    CANCELLED = 'cancelled'
+    """The agent operation was cancelled.
+    """
+
     AWAITING_USER_CONFIRMATION = 'awaiting_user_confirmation'
     """The agent is awaiting user confirmation.
     """

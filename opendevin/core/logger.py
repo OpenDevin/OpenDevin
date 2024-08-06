@@ -88,6 +88,7 @@ class SensitiveDataFilter(logging.Filter):
             'github_token',
             'jwt_secret',
             'ssh_password',
+            'password',
         ]
 
         # add env var names

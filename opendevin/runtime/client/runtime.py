@@ -71,7 +71,7 @@ class EventStreamRuntime(Runtime):
 
         self.container = None
         self.action_semaphore = asyncio.Semaphore(1)  # Ensure one action at a time
-        logger.debug(f'EventStreamRuntime `{sid}` config:\n{self.config}')
+        logger.info(f'EventStreamRuntime `{sid}` config:\n{self.config}')
 
     async def ainit(self, env_vars: dict[str, str] | None = None):
         if self.config.sandbox.od_runtime_extra_deps:
@@ -113,8 +113,8 @@ class EventStreamRuntime(Runtime):
             raise ex
 
     @tenacity.retry(
-        stop=tenacity.stop_after_attempt(5),
-        wait=tenacity.wait_exponential(multiplier=1, min=4, max=60),
+        stop=tenacity.stop_after_attempt(8),
+        wait=tenacity.wait_exponential(multiplier=1, min=10, max=60),
     )
     async def _init_container(
         self,
@@ -142,12 +142,15 @@ class EventStreamRuntime(Runtime):
             else:
                 port_mapping = {f'{self._port}/tcp': self._port}
 
+            env_vars = {'PYTHONUNBUFFERED': '1'}
+            if self.config.debug:
+                env_vars['DEBUG'] = 'true'
             if mount_dir is not None:
                 volumes = {mount_dir: {'bind': sandbox_workspace_dir, 'mode': 'rw'}}
                 logger.info(f'Mount dir: {sandbox_workspace_dir}')
             else:
                 logger.warn(
-                    'Mount dir is not set, will not mount the workspace directory to the container.'
+                    'Mount dir is not set, will not mount the workspace directory to the container!'
                 )
                 volumes = None
 
@@ -160,8 +163,7 @@ class EventStreamRuntime(Runtime):
             container = self.docker_client.containers.run(
                 self.container_image,
                 command=(
-                    f'/opendevin/miniforge3/bin/mamba run --no-capture-output -n base '
-                    'PYTHONUNBUFFERED=1 poetry run '
+                    f'/opendevin/miniforge3/bin/mamba run --no-capture-output -n base poetry run '
                     f'python -u -m opendevin.runtime.client.client {self._port} '
                     f'--working-dir {sandbox_workspace_dir} '
                     f'{plugin_arg}'
@@ -174,7 +176,7 @@ class EventStreamRuntime(Runtime):
                 working_dir='/opendevin/code/',
                 name=self.container_name,
                 detach=True,
-                environment={'DEBUG': 'true'} if self.config.debug else None,
+                environment=env_vars,
                 volumes=volumes,
             )
             logger.info(f'Container started. Server url: {self.api_url}')
@@ -183,6 +185,10 @@ class EventStreamRuntime(Runtime):
             logger.error('Failed to start container')
             logger.exception(e)
             await self.close(close_client=False)
+            await asyncio.sleep(2)
+            if 'Ports are not available' in str(e):
+                self._port = find_available_tcp_port()
+                self.api_url = f'http://localhost:{self._port}'
             raise e
 
     async def _ensure_session(self):
@@ -192,8 +198,8 @@ class EventStreamRuntime(Runtime):
         return self.session
 
     @tenacity.retry(
-        stop=tenacity.stop_after_attempt(10),
-        wait=tenacity.wait_exponential(multiplier=2, min=4, max=60),
+        stop=tenacity.stop_after_attempt(8),
+        wait=tenacity.wait_exponential(multiplier=1, min=10, max=60),
     )
     async def _wait_until_alive(self):
         logger.info('Reconnecting session')
@@ -296,8 +302,6 @@ class EventStreamRuntime(Runtime):
             logger.info('Awaiting session')
             session = await self._ensure_session()
             await self._wait_until_alive()
-
-            assert action.timeout is not None
 
             try:
                 logger.info('Executing command')

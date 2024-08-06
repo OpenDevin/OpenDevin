@@ -215,7 +215,7 @@ class RootTask(Task):
             state: The new state of the subtask.
         """
         task = self.get_task_by_id(id)
-        logger.debug('Setting task {task.id} from state {task.state} to {state}')
+        logger.debug(f'Setting task `{task.id}` from state `{task.state}` to `{state}`')
         task.set_state(state)
         unfinished_tasks = [
             t

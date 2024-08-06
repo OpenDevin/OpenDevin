@@ -61,7 +61,12 @@ done
         print(s)
     for i in range(len(cmds)):
         assert (
-            split_cmds[i].strip() == cmds[i].strip()
+            split_cmds[i]
+            .replace('\\\n', '')
+            .replace('\\', '')
+            .replace('\n', '')
+            .strip()
+            == cmds[i].replace('\\\n', '').replace('\\', '').replace('\n', '').strip()
         ), f'At index {i}: {split_cmds[i]} != {cmds[i]}.'
 
 

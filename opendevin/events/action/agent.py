@@ -11,11 +11,16 @@ class ChangeAgentStateAction(Action):
 
     agent_state: str
     thought: str = ''
+    status_message: str = ''
     action: str = ActionType.CHANGE_AGENT_STATE
 
     @property
     def message(self) -> str:
-        return f'Agent state changed to {self.agent_state}'
+        return (
+            self.status_message
+            if self.status_message
+            else f'Agent state changed to {self.agent_state}'
+        )
 
 
 @dataclass

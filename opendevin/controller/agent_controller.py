@@ -1,6 +1,6 @@
 import asyncio
 import traceback
-from typing import Optional, Type
+from typing import Optional, Tuple, Type
 
 from opendevin.controller.agent import Agent
 from opendevin.controller.state.state import State, TrafficControlState
@@ -10,6 +10,7 @@ from opendevin.core.exceptions import (
     LLMMalformedActionError,
     LLMNoActionError,
     LLMResponseError,
+    UserCancelledError,
 )
 from opendevin.core.logger import opendevin_logger as logger
 from opendevin.core.schema import AgentState
@@ -84,6 +85,8 @@ class AgentController:
             is_delegate: Whether this controller is a delegate.
             headless_mode: Whether the agent is run in headless mode.
         """
+        self._is_closing = False
+        self._close_event = asyncio.Event()
         self._step_lock = asyncio.Lock()
         self.id = sid
         self.agent = agent
@@ -111,10 +114,12 @@ class AgentController:
             self.agent_task = asyncio.create_task(self._start_step_loop())
 
     async def close(self):
+        self._is_closing = True
         if self.agent_task is not None:
             self.agent_task.cancel()
         await self.set_agent_state_to(AgentState.STOPPED)
         self.event_stream.unsubscribe(EventStreamSubscriber.AGENT_CONTROLLER)
+        self._close_event.set()
 
     def update_state_before_step(self):
         self.state.iteration += 1
@@ -134,31 +139,65 @@ class AgentController:
         self.state.last_error = message
         if exception:
             self.state.last_error += f': {exception}'
-        self.event_stream.add_event(ErrorObservation(message), EventSource.AGENT)
+        await self.event_stream.add_event(ErrorObservation(message), EventSource.AGENT)
 
     async def _start_step_loop(self):
-        logger.info(f'[Agent Controller {self.id}] Starting step loop...')
-        while True:
-            try:
-                await self._step()
-            except asyncio.CancelledError:
-                logger.info('AgentController task was cancelled')
-                break
-            except Exception as e:
-                traceback.print_exc()
-                logger.error(f'Error while running the agent: {e}')
-                logger.error(traceback.format_exc())
-                await self.report_error(
-                    'There was an unexpected error while running the agent', exception=e
-                )
-                await self.set_agent_state_to(AgentState.ERROR)
-                break
+        logger.info(f'[Agent Controller `{self.id}`] Starting step loop...')
+        try:
+            while not self._is_closing:
+                try:
+                    await self._step()
+                except asyncio.CancelledError:
+                    logger.info(f'AgentController step was cancelled for `{self.id}`')
+                    break
+                except UserCancelledError:
+                    logger.info('AgentController step was cancelled by user')
+                    break
+                except Exception as e:
+                    traceback.print_exc()
+                    logger.error(f'Error while running the agent: {e}')
+                    logger.error(traceback.format_exc())
+                    await self.report_error(
+                        'There was an unexpected error while running the agent',
+                        exception=e,
+                    )
+                    await self.set_agent_state_to(AgentState.ERROR)
+                    break
 
-            await asyncio.sleep(0.1)
+                await asyncio.sleep(0.1)
+        finally:
+            self._close_event.set()
 
     async def on_event(self, event: Event):
+        # Only parse agent_state for ChangeAgentStateAction
+        new_state = None
         if isinstance(event, ChangeAgentStateAction):
-            await self.set_agent_state_to(event.agent_state)  # type: ignore
+            success, parsed_state = self._parse_agent_state(event.agent_state)
+            if success:
+                new_state = parsed_state
+            else:
+                logger.error(f'Invalid agent state received: {event.agent_state}')
+                return  # Exit early if the state is invalid
+
+        # Cancelled is coming from the UI's Stop button
+        if self.get_agent_state() == AgentState.CANCELLED:
+            if isinstance(event, Observation) and not isinstance(
+                event, AgentStateChangedObservation
+            ):
+                logger.info('Task cancelled, setting to finished.')
+                await self.set_agent_state_to(AgentState.FINISHED)
+                return
+            elif isinstance(event, ChangeAgentStateAction):
+                # Allow ChangeAgentStateAction to be processed even when stopped
+                pass
+            else:
+                # Ignore all other events when cancelled
+                logger.debug(f'Ignoring event in CANCELLED state: {event}')
+                return
+
+        if isinstance(event, ChangeAgentStateAction):
+            if new_state is not None and new_state != self.state.agent_state:
+                await self.set_agent_state_to(new_state)
         elif isinstance(event, MessageAction):
             if event.source == EventSource.USER:
                 logger.info(
@@ -211,12 +250,12 @@ class AgentController:
         self.agent.reset()
 
     async def set_agent_state_to(self, new_state: AgentState):
-        logger.debug(
-            f'[Agent Controller {self.id}] Setting agent({self.agent.name}) state from {self.state.agent_state} to {new_state}'
-        )
-
         if new_state == self.state.agent_state:
             return
+
+        logger.debug(
+            f'[Agent Controller `{self.id}`] Setting agent({self.agent.name}) state from {self.state.agent_state} to {new_state}'
+        )
 
         if (
             self.state.agent_state == AgentState.PAUSED
@@ -227,22 +266,26 @@ class AgentController:
             self.state.traffic_control_state = TrafficControlState.PAUSED
 
         self.state.agent_state = new_state
-        if new_state == AgentState.STOPPED or new_state == AgentState.ERROR:
+        if new_state in (AgentState.STOPPED, AgentState.ERROR):
             self.reset_task()
 
-        if self._pending_action is not None and (
-            new_state == AgentState.USER_CONFIRMED
-            or new_state == AgentState.USER_REJECTED
+        if self._pending_action is not None and new_state in (
+            AgentState.CANCELLED,
+            AgentState.USER_CONFIRMED,
+            AgentState.USER_REJECTED,
         ):
             if hasattr(self._pending_action, 'thought'):
                 self._pending_action.thought = ''  # type: ignore[union-attr]
-            if new_state == AgentState.USER_CONFIRMED:
+            if new_state == AgentState.CANCELLED:
+                # await self.set_agent_state_to(AgentState.PAUSED)
+                pass
+            elif new_state == AgentState.USER_CONFIRMED:
                 self._pending_action.is_confirmed = ActionConfirmationStatus.CONFIRMED  # type: ignore[attr-defined]
             else:
                 self._pending_action.is_confirmed = ActionConfirmationStatus.REJECTED  # type: ignore[attr-defined]
-            self.event_stream.add_event(self._pending_action, EventSource.AGENT)
+            await self.event_stream.add_event(self._pending_action, EventSource.AGENT)
 
-        self.event_stream.add_event(
+        await self.event_stream.add_event(
             AgentStateChangedObservation('', self.state.agent_state), EventSource.AGENT
         )
 
@@ -269,7 +312,7 @@ class AgentController:
             metrics=self.state.metrics,
         )
         logger.info(
-            f'[Agent Controller {self.id}]: start delegate, creating agent {delegate_agent.name} using LLM {llm}'
+            f'[Agent Controller `{self.id}`]: start delegate, creating agent {delegate_agent.name} using {llm}'
         )
         self.delegate = AgentController(
             sid=self.id + '-delegate',
@@ -288,18 +331,25 @@ class AgentController:
             await asyncio.sleep(1)
             return
 
+        # Check for cancellation before proceeding
+        if self.get_agent_state() == AgentState.CANCELLED:
+            logger.info('Step cancelled due to agent state.')
+            return
+
         if self._pending_action:
             logger.debug(
-                f'[Agent Controller {self.id}] waiting for pending action: {self._pending_action}'
+                f'[Agent Controller `{self.id}`] waiting for pending action: {self._pending_action}'
             )
             await asyncio.sleep(1)
             return
 
         if self.delegate is not None:
-            logger.debug(f'[Agent Controller {self.id}] Delegate not none, awaiting...')
+            logger.debug(
+                f'[Agent Controller `{self.id}`] Delegate not none, awaiting...'
+            )
             assert self.delegate != self
             await self.delegate._step()
-            logger.debug(f'[Agent Controller {self.id}] Delegate step done')
+            logger.debug(f'[Agent Controller `{self.id}`] Delegate step done')
             assert self.delegate is not None
             delegate_state = self.delegate.get_agent_state()
             logger.debug(
@@ -309,9 +359,9 @@ class AgentController:
                 # close the delegate upon error
                 await self.delegate.close()
                 self.delegate = None
-                self.delegateAction = None
-                await self.report_error('Delegator agent encounters an error')
+                await self.report_error('Delegator agent encountered an error')
                 return
+
             delegate_done = delegate_state in (AgentState.FINISHED, AgentState.REJECTED)
             if delegate_done:
                 logger.info(
@@ -340,8 +390,7 @@ class AgentController:
 
                 # clean up delegate status
                 self.delegate = None
-                self.delegateAction = None
-                self.event_stream.add_event(obs, EventSource.AGENT)
+                await self.event_stream.add_event(obs, EventSource.AGENT)
             return
 
         logger.info(
@@ -398,15 +447,29 @@ class AgentController:
         action: Action = NullAction()
         try:
             action = self.agent.step(self.state)
+
+            # Check for cancellation after getting the action
+            if self.get_agent_state() == AgentState.CANCELLED:
+                logger.info('Action cancelled due to agent state.')
+                return
+
             if action is None:
                 raise LLMNoActionError('No action was returned')
+
+            if asyncio.iscoroutine(action):
+                action = await action
+            logger.info(action, extra={'msg_type': 'ACTION'})
+
+        except UserCancelledError:
+            logger.info('LLM request was cancelled.')
+            await self.set_agent_state_to(AgentState.CANCELLED)
+            return
         except (LLMMalformedActionError, LLMNoActionError, LLMResponseError) as e:
-            # report to the user
-            # and send the underlying exception to the LLM for self-correction
-            await self.report_error(str(e))
+            # report to the user and send the underlying exception to the LLM for self-correction
+            await self.report_error(f'{e}')
             return
 
-        if action.runnable:
+        if hasattr(action, 'runnable') and action.runnable:
             if self.state.confirmation_mode and (
                 type(action) is CmdRunAction or type(action) is IPythonRunCellAction
             ):
@@ -420,10 +483,9 @@ class AgentController:
                 == ActionConfirmationStatus.AWAITING_CONFIRMATION
             ):
                 await self.set_agent_state_to(AgentState.AWAITING_USER_CONFIRMATION)
-            self.event_stream.add_event(action, EventSource.AGENT)
+            await self.event_stream.add_event(action, EventSource.AGENT)
 
         await self.update_state_after_step()
-        logger.info(action, extra={'msg_type': 'ACTION'})
 
         if self._is_stuck():
             await self.report_error('Agent got stuck in a loop')
@@ -458,7 +520,7 @@ class AgentController:
         if start_id == -1:
             start_id = self.event_stream.get_latest_event_id() + 1
         else:
-            logger.debug(f'AgentController {self.id} restoring from event {start_id}')
+            logger.debug(f'AgentController `{self.id}` restoring from event {start_id}')
 
         # make sure history is in sync
         self.state.start_id = start_id
@@ -470,7 +532,11 @@ class AgentController:
             self.state.history.end_id = self.state.end_id
 
     def _is_stuck(self):
-        # check if delegate stuck
+        """Checks if the agent is stuck.
+
+        Returns:
+            bool: True if the agent is stuck, False otherwise.
+        """
         if self.delegate and self.delegate._is_stuck():
             return True
 
@@ -483,3 +549,42 @@ class AgentController:
             f'state={self.state!r}, agent_task={self.agent_task!r}, '
             f'delegate={self.delegate!r}, _pending_action={self._pending_action!r})'
         )
+
+    async def stop(self) -> None:
+        if self.state.agent_state not in (
+            AgentState.FINISHED,
+            # AgentState.REJECTED,
+            AgentState.ERROR,
+        ):
+            await self.set_agent_state_to(AgentState.STOPPED)
+        else:
+            # If already in a terminal state, just ensure we're not running
+            self._is_closing = True
+            if self.agent_task:
+                self.agent_task.cancel()
+
+    def _parse_agent_state(self, state_str: str) -> Tuple[bool, AgentState | None]:
+        """Parse a string into an AgentState enum value.
+
+        Args:
+            state_str (str): The string representation of the agent state.
+
+        Returns:
+            Tuple[bool, AgentState | None]: A tuple containing:
+                - A boolean indicating whether the parsing was successful.
+                - The AgentState enum value if successful, None otherwise.
+        """
+        try:
+            new_state = AgentState(state_str)
+            return True, new_state
+        except ValueError:
+            logger.error(f'Invalid agent state received: {state_str}')
+            return False, None
+
+    async def check_if_cancelled(self):
+        """Check if the agent is cancelled. Serves as callback for the LLM.
+
+        Returns:
+            bool: True if the agent is stopped, False otherwise.
+        """
+        return self.get_agent_state() == AgentState.CANCELLED

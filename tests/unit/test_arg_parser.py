@@ -1,8 +1,14 @@
+import os
+
 import pytest
 
 from opendevin.core.config import get_parser
 
 
+@pytest.mark.skipif(
+    os.getenv('TEST_IN_CI') != 'true',
+    reason='This test is too dependent on pytest version. Skipping local execution, only run on CI',
+)
 def test_help_message(capsys):
     parser = get_parser()
     with pytest.raises(SystemExit):  # `--help` causes SystemExit

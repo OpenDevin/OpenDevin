@@ -4,10 +4,12 @@ import { useSelector } from "react-redux";
 import ArrowIcon from "#/assets/arrow";
 import PauseIcon from "#/assets/pause";
 import PlayIcon from "#/assets/play";
+import StopIcon from "#/assets/stop";
 import { changeAgentState } from "#/services/agentStateService";
 import store, { RootState } from "#/store";
 import AgentState from "#/types/AgentState";
 import { clearMessages } from "#/state/chatSlice";
+import Session from "#/services/session";
 
 const IgnoreTaskStateMap: { [k: string]: AgentState[] } = {
   [AgentState.PAUSED]: [
@@ -17,6 +19,7 @@ const IgnoreTaskStateMap: { [k: string]: AgentState[] } = {
     AgentState.FINISHED,
     AgentState.REJECTED,
     AgentState.AWAITING_USER_INPUT,
+    AgentState.CANCELLED,
     AgentState.AWAITING_USER_CONFIRMATION,
   ],
   [AgentState.RUNNING]: [
@@ -26,6 +29,7 @@ const IgnoreTaskStateMap: { [k: string]: AgentState[] } = {
     AgentState.FINISHED,
     AgentState.REJECTED,
     AgentState.AWAITING_USER_INPUT,
+    AgentState.CANCELLED,
     AgentState.AWAITING_USER_CONFIRMATION,
   ],
   [AgentState.STOPPED]: [AgentState.INIT, AgentState.STOPPED],
@@ -92,6 +96,10 @@ function AgentControlBar() {
     changeAgentState(action);
   };
 
+  const handleCancelAction = () => {
+    Session.cancelCurrentAction();
+  };
+
   useEffect(() => {
     if (curAgentState === desiredState) {
       if (curAgentState === AgentState.STOPPED) {
@@ -142,6 +150,14 @@ function AgentControlBar() {
           handleAction={handleAction}
         >
           <ArrowIcon />
+        </ActionButton>
+        <ActionButton
+          isDisabled={isLoading || curAgentState !== AgentState.RUNNING}
+          content="Cancel current task"
+          action={AgentState.CANCELLED}
+          handleAction={handleCancelAction}
+        >
+          <StopIcon />
         </ActionButton>
       </div>
     </div>

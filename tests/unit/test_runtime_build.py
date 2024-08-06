@@ -20,6 +20,14 @@ OD_VERSION = f'od_v{_get_package_version()}'
 RUNTIME_IMAGE_PREFIX = 'od_runtime'
 
 
+@pytest.fixture(autouse=True)
+def print_method_name(request):
+    print('\n########################################################################')
+    print(f'Running test: {request.node.name}')
+    print('########################################################################')
+    yield
+
+
 @pytest.fixture
 def temp_dir(tmp_path_factory: TempPathFactory) -> str:
     return str(tmp_path_factory.mktemp('test_runtime_build'))

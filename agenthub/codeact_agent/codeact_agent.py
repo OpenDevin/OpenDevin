@@ -6,7 +6,7 @@ from agenthub.codeact_agent.prompt import (
     SYSTEM_PREFIX,
     SYSTEM_SUFFIX,
 )
-from opendevin.controller.agent import Agent
+from opendevin.controller.agent import AsyncAgent
 from opendevin.controller.state.state import State
 from opendevin.core.message import ImageContent, Message, TextContent
 from opendevin.events.action import (
@@ -47,7 +47,7 @@ def get_in_context_example() -> str:
     return EXAMPLES
 
 
-class CodeActAgent(Agent):
+class CodeActAgent(AsyncAgent):
     VERSION = '1.8'
     """
     The Code Act Agent is a minimalist agent.
@@ -180,7 +180,7 @@ class CodeActAgent(Agent):
         This includes gathering info on previous steps and prompting the model to make a command to execute.
 
         Parameters:
-        - state (State): used to get updated info
+        - state (State): used to get updated info and background commands
 
         Returns:
         - CmdRunAction(command) - bash command to run
@@ -189,15 +189,32 @@ class CodeActAgent(Agent):
         - MessageAction(content) - Message action to run (e.g. ask for clarification)
         - AgentFinishAction() - end the interaction
         """
-        # if we're done, go back
-        latest_user_message = state.history.get_last_user_message()
-        if latest_user_message and latest_user_message.strip() == '/exit':
+        messages, is_exit = self._prepare_messages(state)
+        if is_exit:
             return AgentFinishAction()
+        return self._common_step_logic_sync(state, self.llm.completion, messages)
 
+    async def async_step(self, state: State) -> Action:
+        """Asynchronously performs one step using the CodeAct Agent."""
+        messages, is_exit = self._prepare_messages(state)
+        if is_exit:
+            return AgentFinishAction()
+        return await self._common_step_logic_async(
+            state, self.llm.async_completion, messages
+        )
+
+    def _common_step_logic_sync(
+        self, state: State, completion_func, messages: list[Message]
+    ) -> Action:
+        """Common logic for the synchronous step method.
+
+        :param state: The current state.
+        :param completion_func: self.llm.completion
+        :param messages: The prepared messages.
+        :return: The resulting Action.
+        """
         # prepare what we want to send to the LLM
-        messages = self._get_messages(state)
-
-        response = self.llm.completion(
+        response = completion_func(
             messages=[message.model_dump() for message in messages],
             stop=[
                 '</execute_ipython>',
@@ -207,6 +224,44 @@ class CodeActAgent(Agent):
             temperature=0.0,
         )
         return self.action_parser.parse(response)
+
+    async def _common_step_logic_async(
+        self, state: State, completion_func, messages: list[Message]
+    ) -> Action:
+        """Common logic for the asynchronous step method.
+
+        :param state: The current state.
+        :param completion_func: self.llm.async_completion
+        :param messages: The prepared messages.
+        :return: The resulting Action.
+        """
+        response = await completion_func(
+            messages=[message.model_dump() for message in messages],
+            stop=[
+                '</execute_ipython>',
+                '</execute_bash>',
+                '</execute_browse>',
+            ],
+            temperature=0.0,
+        )
+        return self.action_parser.parse(response)
+
+    def _prepare_messages(self, state: State) -> tuple[list[Message], bool]:
+        """Prepare the messages for the LLM completion and check for exit command.
+
+        Returns:
+        - A tuple containing the prepared messages and a boolean indicating if it's an exit command
+        """
+        # Prepare messages as before
+        messages: list[Message] = self._get_messages(state)
+        is_exit = False
+
+        # Check for exit command
+        latest_user_message = state.history.get_last_user_message()
+        if latest_user_message and latest_user_message.strip() == '/exit':
+            is_exit = True
+
+        return messages, is_exit
 
     def _get_messages(self, state: State) -> list[Message]:
         messages: list[Message] = [

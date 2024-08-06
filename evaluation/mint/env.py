@@ -35,7 +35,7 @@ class SimplifiedEnv:
 
         self.task_config = task_config
 
-    def step(self, lm_message: str):
+    async def step(self, lm_message: str):
         observation = self.handle_propose_solution(lm_message)
 
         self.check_max_iteration()

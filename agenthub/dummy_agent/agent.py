@@ -1,3 +1,4 @@
+import asyncio
 from typing import TypedDict, Union
 
 from opendevin.controller.agent import Agent
@@ -26,6 +27,7 @@ from opendevin.events.observation import (
 )
 from opendevin.events.serialization.event import event_to_dict
 from opendevin.llm.llm import LLM
+from opendevin.runtime.utils.async_utils import async_to_sync
 
 """
 FIXME: There are a few problems this surfaced
@@ -127,7 +129,12 @@ class DummyAgent(Agent):
             },
         ]
 
-    def step(self, state: State) -> Action:
+    @async_to_sync
+    def step(self, state: State):
+        return self.async_step(state)
+
+    async def async_step(self, state: State) -> Action:
+        await asyncio.sleep(0.1)
         if state.iteration >= len(self.steps):
             return AgentFinishAction()
 

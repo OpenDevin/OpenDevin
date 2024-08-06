@@ -1,3 +1,4 @@
+import copy
 from typing import Any, Optional
 
 from opendevin.core.config import AppConfig
@@ -43,6 +44,7 @@ class ServerRuntime(Runtime):
         plugins: list[PluginRequirement] | None = None,
         sandbox: Sandbox | None = None,
     ):
+        self.config = copy.deepcopy(config)
         super().__init__(config, event_stream, sid, plugins)
         self.file_store = LocalFileStore(config.workspace_base)
         if sandbox is None:
@@ -52,7 +54,7 @@ class ServerRuntime(Runtime):
             self.sandbox = sandbox
             self._is_external_sandbox = True
         self.browser: BrowserEnv | None = None
-        logger.debug(f'ServerRuntime `{sid}` config:\n{self.config}')
+        logger.info(f'ServerRuntime `{sid}` config:\n{self.config}')
 
     def create_sandbox(self, sid: str = 'default', box_type: str = 'ssh') -> Sandbox:
         if box_type == 'local':
@@ -82,12 +84,16 @@ class ServerRuntime(Runtime):
 
     async def ainit(self, env_vars: dict[str, str] | None = None):
         # init sandbox plugins
-        self.sandbox.init_plugins(self.plugins)
+        await self.sandbox.init_plugins_async(self.plugins)
 
         # MUST call super().ainit() to initialize both default env vars
         # AND the ones in env vars!
         await super().ainit(env_vars)
 
+        await self.sandbox.ainit()
+
+        # init sandbox plugins
+        # if self.plugins and len(self.plugins) > 0:
         if any(isinstance(plugin, JupyterRequirement) for plugin in self.plugins):
             obs = await self.run_ipython(
                 IPythonRunCellAction(
@@ -100,7 +106,7 @@ class ServerRuntime(Runtime):
 
     async def close(self):
         if hasattr(self, '_is_external_sandbox') and not self._is_external_sandbox:
-            self.sandbox.close()
+            await self.sandbox.close()
         if hasattr(self, 'browser') and self.browser is not None:
             self.browser.close()
 
@@ -125,16 +131,24 @@ class ServerRuntime(Runtime):
         self.sandbox.copy_to(host_src, sandbox_dest, recursive)
 
     async def run(self, action: CmdRunAction) -> Observation:
-        return self._run_command(action.command)
+        return await self._run_command(action.command)
 
     async def run_ipython(self, action: IPythonRunCellAction) -> Observation:
-        self._run_command(
+        write_result = await self._run_command(
             f"cat > /tmp/opendevin_jupyter_temp.py <<'EOL'\n{action.code}\nEOL"
         )
+        if isinstance(write_result, ErrorObservation):
+            return write_result
 
         # run the code
-        obs = self._run_command('cat /tmp/opendevin_jupyter_temp.py | execute_cli')
-        output = obs.content
+        execute_result = await self._run_command(
+            'cat /tmp/opendevin_jupyter_temp.py | execute_cli'
+        )
+        if isinstance(execute_result, ErrorObservation):
+            return execute_result
+
+        output = execute_result.content
+
         if 'pip install' in action.code:
             print(output)
             package_names = action.code.split(' ', 2)[-1]
@@ -146,14 +160,14 @@ class ServerRuntime(Runtime):
                     'Note: you may need to restart the kernel to use updated packages.'
                     in output
                 ):
-                    self._run_command(
+                    await self._run_command(
                         (
                             "cat > /tmp/opendevin_jupyter_temp.py <<'EOL'\n"
                             f'{restart_kernel}\n'
                             'EOL'
                         )
                     )
-                    obs = self._run_command(
+                    obs = await self._run_command(
                         'cat /tmp/opendevin_jupyter_temp.py | execute_cli'
                     )
                     output = '[Package installed successfully]'
@@ -169,14 +183,14 @@ class ServerRuntime(Runtime):
 
                     # re-init the kernel after restart
                     if action.kernel_init_code:
-                        self._run_command(
+                        await self._run_command(
                             (
                                 f"cat > /tmp/opendevin_jupyter_init.py <<'EOL'\n"
                                 f'{action.kernel_init_code}\n'
                                 'EOL'
                             ),
                         )
-                        obs = self._run_command(
+                        await self._run_command(
                             'cat /tmp/opendevin_jupyter_init.py | execute_cli',
                         )
             elif (
@@ -188,7 +202,8 @@ class ServerRuntime(Runtime):
 
     async def read(self, action: FileReadAction) -> Observation:
         # TODO: use self.file_store
-        working_dir = self.sandbox.get_working_directory()
+        assert self.sandbox is not None
+        working_dir = await self.sandbox.get_working_directory()
         return await read_file(
             action.path,
             working_dir,
@@ -200,7 +215,8 @@ class ServerRuntime(Runtime):
 
     async def write(self, action: FileWriteAction) -> Observation:
         # TODO: use self.file_store
-        working_dir = self.sandbox.get_working_directory()
+        assert self.sandbox is not None
+        working_dir = await self.sandbox.get_working_directory()
         return await write_file(
             action.path,
             working_dir,
@@ -217,9 +233,13 @@ class ServerRuntime(Runtime):
     async def browse_interactive(self, action: BrowseInteractiveAction) -> Observation:
         return await browse(action, self.browser)
 
-    def _run_command(self, command: str) -> Observation:
+    async def _run_command(self, command: str) -> Observation:
+        assert self.sandbox is not None
         try:
-            exit_code, output = self.sandbox.execute(command)
+            result = await self.sandbox.execute_async(command)
+            if isinstance(result, tuple) and len(result) == 2:
+                exit_code, output = result
+
             if 'pip install' in command:
                 package_names = command.split(' ', 2)[-1]
                 is_single_package = ' ' not in package_names

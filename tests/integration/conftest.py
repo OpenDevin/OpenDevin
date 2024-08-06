@@ -247,8 +247,12 @@ def set_up():
 
     # Remove and recreate the workspace_path
     if os.path.exists(workspace_path):
-        shutil.rmtree(workspace_path)
-    os.makedirs(workspace_path)
+        try:
+            print(f'[DEBUG] Removing workspace directory: {workspace_path}')
+            shutil.rmtree(workspace_path)
+        except Exception:
+            pass
+    os.makedirs(workspace_path, exist_ok=True)
 
 
 @pytest.fixture(autouse=True)
@@ -272,8 +276,11 @@ def resource_setup():
             print('[DEBUG] Final working directory does not exist')
 
         if os.path.exists(workspace_path):
-            shutil.rmtree(workspace_path)
-        os.makedirs(workspace_path, exist_ok=True)
+            try:
+                shutil.rmtree(workspace_path)
+                os.makedirs(workspace_path, exist_ok=True)
+            except Exception:
+                pass
 
         # Try to change back to the original directory
         try:

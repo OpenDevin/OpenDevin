@@ -155,7 +155,7 @@ Enjoy!
 """
     with open(os.path.join(CONFIG.workspace_base, 'bad.txt'), 'r') as f:
         content = f.read()
-    assert content.strip() == text.strip()
+    assert content.strip() == text.strip(), f'Unexpected content: {content}'
 
 
 @pytest.mark.skipif(
@@ -236,6 +236,10 @@ def test_ipython_module(current_test_name: str):
     ), f'Expected content "1.0.9", but got "{content.strip()}"'
 
 
+@pytest.mark.skipif(
+    os.getenv('TEST_IN_CI') != 'true',
+    reason='This test is only for CI',
+)
 @pytest.mark.skipif(
     os.getenv('DEFAULT_AGENT') != 'BrowsingAgent'
     and os.getenv('DEFAULT_AGENT') != 'CodeActAgent',

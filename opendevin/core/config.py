@@ -6,7 +6,7 @@ import uuid
 from dataclasses import dataclass, field, fields, is_dataclass
 from enum import Enum
 from types import UnionType
-from typing import Any, ClassVar, MutableMapping, get_args, get_origin
+from typing import Any, Callable, ClassVar, MutableMapping, get_args, get_origin
 
 import toml
 from dotenv import load_dotenv
@@ -52,6 +52,7 @@ class LLMConfig:
         output_cost_per_token: The cost per output token. This will available in logs for the user to check.
         ollama_base_url: The base URL for the OLLAMA API.
         drop_params: Drop any unmapped (unsupported) params without causing an exception.
+        on_cancel_requested_fn: a callback for the frontend, default None.
     """
 
     model: str = 'gpt-4o'
@@ -79,6 +80,7 @@ class LLMConfig:
     output_cost_per_token: float | None = None
     ollama_base_url: str | None = None
     drop_params: bool | None = None
+    on_cancel_requested_fn: Callable | None = None
 
     def defaults_to_dict(self) -> dict:
         """Serialize fields to a dict for the frontend, including type hints, defaults, and whether it's optional."""
@@ -164,6 +166,7 @@ class SandboxConfig(metaclass=Singleton):
 
     """
 
+    env: dict = field(default_factory=dict)
     box_type: str = 'ssh'
     container_image: str = 'ghcr.io/opendevin/sandbox' + (
         f':{os.getenv("OPEN_DEVIN_BUILD_VERSION")}'
@@ -183,10 +186,10 @@ class SandboxConfig(metaclass=Singleton):
 
     def defaults_to_dict(self) -> dict:
         """Serialize fields to a dict for the frontend, including type hints, defaults, and whether it's optional."""
-        dict = {}
+        _dict = {}
         for f in fields(self):
-            dict[f.name] = get_field_info(f)
-        return dict
+            _dict[f.name] = get_field_info(f)
+        return _dict
 
     def __str__(self):
         attr_str = []
@@ -255,6 +258,7 @@ class AppConfig(metaclass=Singleton):
     max_iterations: int = _MAX_ITERATIONS
     max_budget_per_task: float | None = None
     e2b_api_key: str = ''
+    use_host_network: bool | None = True
     ssh_hostname: str = 'localhost'
     disable_color: bool = False
     persist_sandbox: bool = False
@@ -450,6 +454,11 @@ def load_from_toml(cfg: AppConfig, toml_file: str = 'config.toml'):
         cfg: The AppConfig object to update attributes of.
         toml_file: The path to the toml file. Defaults to 'config.toml'.
     """
+    if not os.path.isfile(toml_file):
+        logger.opendevin_logger.info(
+            f'Config file {toml_file} does not exist, skipped.'
+        )
+        return
     # try to read the config.toml file into the config object
     try:
         with open(toml_file, 'r', encoding='utf-8') as toml_contents:
@@ -461,6 +470,10 @@ def load_from_toml(cfg: AppConfig, toml_file: str = 'config.toml'):
             f'Cannot parse config from toml, toml values have not been applied.\nError: {e}',
             exc_info=False,
         )
+        # Clear sensitive information when TOML is invalid
+        cfg.e2b_api_key = ''
+        cfg.jwt_secret = ''
+        cfg.ssh_password = None
         return
 
     # if there was an exception or core is not in the toml, try to use the old-style toml
@@ -554,7 +567,6 @@ def finalize_config(cfg: AppConfig):
         cfg.workspace_mount_path_in_sandbox = cfg.workspace_mount_path
 
     if cfg.workspace_mount_rewrite:  # and not config.workspace_mount_path:
-        # TODO why do we need to check if workspace_mount_path is None?
         base = cfg.workspace_base or os.getcwd()
         parts = cfg.workspace_mount_rewrite.split(':')
         cfg.workspace_mount_path = base.replace(parts[0], parts[1])
@@ -572,6 +584,16 @@ def finalize_config(cfg: AppConfig):
     # make sure cache dir exists
     if cfg.cache_dir:
         pathlib.Path(cfg.cache_dir).mkdir(parents=True, exist_ok=True)
+
+    # Populate SandboxConfig.env with SANDBOX_ENV_ prefixed variables
+    sandbox_env_vars = {
+        k[12:]: v for k, v in os.environ.items() if k.startswith('SANDBOX_ENV_')
+    }
+    if sandbox_env_vars:
+        # Ensure cfg.sandbox.env is a mutable dictionary
+        if not isinstance(cfg.sandbox.env, dict):
+            cfg.sandbox.env = {}  # type: ignore[unreachable]
+        cfg.sandbox.env.update(sandbox_env_vars)
 
 
 # Utility function for command line --group argument

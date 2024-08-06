@@ -1,3 +1,4 @@
+import asyncio
 from typing import Optional
 
 from agenthub.codeact_agent.codeact_agent import CodeActAgent
@@ -17,6 +18,11 @@ class AgentSession:
     """Represents a session with an agent.
 
     Attributes:
+        sid: The session ID.
+        event_stream: The event stream associated with the session.
+        controller: The AgentController instance for controlling the agent.
+        runtime: The runtime environment for the session.
+        _closed: A flag indicating whether the session is closed.
         controller: The AgentController instance for controlling the agent.
     """
 
@@ -48,7 +54,7 @@ class AgentSession:
             start_event: The start event data (optional).
         """
         if self.controller or self.runtime:
-            raise Exception(
+            raise RuntimeError(
                 'Session already started. You need to close this session and start a new one.'
             )
         await self._create_runtime(runtime_name, config, agent)
@@ -68,7 +74,10 @@ class AgentSession:
             end_state.save_to_session(self.sid, self.file_store)
             await self.controller.close()
         if self.runtime is not None:
-            await self.runtime.close()
+            if asyncio.iscoroutinefunction(self.runtime.close):
+                await self.runtime.close()
+            else:
+                self.runtime.close()
         self._closed = True
 
     async def _create_runtime(self, runtime_name: str, config: AppConfig, agent: Agent):
@@ -96,7 +105,7 @@ class AgentSession:
     ):
         """Creates an AgentController instance."""
         if self.controller is not None:
-            raise Exception('Controller already created')
+            raise RuntimeError('Controller already created')
         if self.runtime is None:
             raise Exception('Runtime must be initialized before the agent controller')
 
@@ -107,8 +116,8 @@ class AgentSession:
                 and isinstance(self.runtime.sandbox, DockerSSHBox)
             ):
                 logger.warning(
-                    'CodeActAgent requires DockerSSHBox as sandbox! Using other sandbox that are not stateful'
-                    ' LocalBox will not work properly.'
+                    'CodeActAgent requires DockerSSHBox as sandbox! Using a different sandbox that are'
+                    ' not stateful, like LocalBox, will not work properly.'
                 )
         self.runtime.init_runtime_tools(agent.runtime_tools)
 
@@ -130,5 +139,6 @@ class AgentSession:
                 agent_state, max_iterations, confirmation_mode
             )
             logger.info(f'Restored agent state from session, sid: {self.sid}')
+            agent.llm.config.on_cancel_requested_fn = self.controller.check_if_cancelled
         except Exception as e:
             print('Error restoring state', e)

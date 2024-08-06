@@ -30,6 +30,7 @@ from opendevin.events.observation import (
 from opendevin.events.serialization.action import ACTION_TYPE_TO_CLASS
 from opendevin.runtime.plugins import JupyterRequirement, PluginRequirement
 from opendevin.runtime.tools import RuntimeTool
+from opendevin.runtime.utils.async_utils import async_to_sync
 from opendevin.storage import FileStore
 
 
@@ -51,9 +52,18 @@ class Runtime:
     sid is the session id, which is used to identify the current user session.
     """
 
+    _instance = None
+    _initialization_lock = asyncio.Lock()
+    _initialized = False
+
     sid: str
     file_store: FileStore
     DEFAULT_ENV_VARS: dict[str, str]
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
 
     def __init__(
         self,
@@ -62,15 +72,17 @@ class Runtime:
         sid: str = 'default',
         plugins: list[PluginRequirement] | None = None,
     ):
-        self.sid = sid
-        self.event_stream = event_stream
-        self.event_stream.subscribe(EventStreamSubscriber.RUNTIME, self.on_event)
-        self.plugins = plugins if plugins is not None and len(plugins) > 0 else []
+        if not hasattr(self, 'initialized'):
+            self.sid = sid
+            self.event_stream = event_stream
+            self.event_stream.subscribe(EventStreamSubscriber.RUNTIME, self.on_event)
+            self.plugins = plugins if plugins is not None and len(plugins) > 0 else []
 
-        self.config = copy.deepcopy(config)
-        self.DEFAULT_ENV_VARS = _default_env_vars(config.sandbox)
-        atexit.register(self.close_sync)
-        logger.debug(f'Runtime `{sid}` config:\n{self.config}')
+            self.config = copy.deepcopy(config)
+            self.DEFAULT_ENV_VARS = _default_env_vars(config.sandbox)
+            self.initialized = False
+            atexit.register(self.close_sync)
+            logger.info(f'Runtime `{sid}` config:\n{self.config}')
 
     async def ainit(self, env_vars: dict[str, str] | None = None) -> None:
         """
@@ -85,7 +97,8 @@ class Runtime:
             logger.debug(f'Adding provided env vars: {env_vars}')
             await self.add_env_vars(env_vars)
 
-    async def close(self) -> None:
+    @async_to_sync
+    def close(self):
         pass
 
     def close_sync(self) -> None:
@@ -134,6 +147,8 @@ class Runtime:
         if not cmd:
             return
         cmd = cmd.strip()
+        if cmd == '':
+            return
         logger.debug(f'Adding env var: {cmd}')
         obs = await self.run(CmdRunAction(cmd))
         if not isinstance(obs, CmdOutputObservation) or obs.exit_code != 0:
@@ -150,7 +165,7 @@ class Runtime:
             observation = await self.run_action(event)
             observation._cause = event.id  # type: ignore[attr-defined]
             source = event.source if event.source else EventSource.AGENT
-            self.event_stream.add_event(observation, source)  # type: ignore[arg-type]
+            await self.event_stream.add_event(observation, source)  # type: ignore[arg-type]
 
     async def run_action(self, action: Action) -> Observation:
         """Run an action and return the resulting observation.

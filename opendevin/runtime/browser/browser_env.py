@@ -34,6 +34,9 @@ class BrowserEnv:
         # Initialize browser environment process
         multiprocessing.set_start_method('spawn', force=True)
         self.browser_side, self.agent_side = multiprocessing.Pipe()
+        self.process: multiprocessing.Process | None = multiprocessing.Process(
+            target=self.browser_process,
+        )
 
         self.init_browser()
         atexit.register(self.close)
@@ -55,6 +58,10 @@ class BrowserEnv:
         retry=tenacity.retry_if_exception_type(BrowserInitException),
     )
     def init_browser(self):
+        if not hasattr(self, 'process') or not self.process:
+            logger.warning('Browser process not available, skipping!')
+            return
+
         logger.info('Starting browser env...')
         try:
             self.process = multiprocessing.Process(target=self.browser_process)
@@ -106,7 +113,7 @@ class BrowserEnv:
 
                     # shutdown the browser environment
                     if unique_request_id == 'SHUTDOWN':
-                        logger.info('SHUTDOWN recv, shutting down browser env...')
+                        logger.debug('SHUTDOWN recv, shutting down browser env...')
                         env.close()
                         return
                     elif unique_request_id == 'IS_ALIVE':
@@ -144,14 +151,14 @@ class BrowserEnv:
                     obs['elapsed_time'] = obs['elapsed_time'].item()
                     self.browser_side.send((unique_request_id, obs))
             except KeyboardInterrupt:
-                logger.info('Browser env process interrupted by user.')
+                logger.debug('Browser env process interrupted by user.')
                 try:
                     env.close()
                 except Exception:
                     pass
                 return
 
-    def step(self, action_str: str, timeout: float = 30) -> dict:
+    async def step(self, action_str: str, timeout: float = 30) -> dict:
         """Execute an action in the browser environment and return the observation."""
         unique_request_id = str(uuid.uuid4())
         self.agent_side.send((unique_request_id, {'action': action_str}))
@@ -170,10 +177,10 @@ class BrowserEnv:
             response_id, _ = self.agent_side.recv()
             if response_id == 'ALIVE':
                 return True
-            logger.info(f'Browser env is not alive. Response ID: {response_id}')
+            logger.debug(f'Browser env is not alive. Response ID: {response_id}')
 
     def close(self):
-        if not self.process.is_alive():
+        if self.process is None or not self.process.is_alive():
             return
         try:
             self.agent_side.send(('SHUTDOWN', None))
@@ -190,7 +197,14 @@ class BrowserEnv:
             self.agent_side.close()
             self.browser_side.close()
         except Exception:
-            logger.error('Encountered an error when closing browser env', exc_info=True)
+            logger.error(
+                'Encountered an error when closing browser env', exc_info=False
+            )
+        finally:
+            # Ensure browser is set to None after closing
+            self.agent_side.close()
+            self.browser_side.close()
+            self.process = None
 
     @staticmethod
     def image_to_png_base64_url(

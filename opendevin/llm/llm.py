@@ -101,6 +101,16 @@ class LLM:
         if self.config.drop_params:
             litellm.drop_params = self.config.drop_params
 
+        # Set up config attributes with default values to prevent AttributeError
+        self.config.api_version = getattr(self.config, 'api_version', None)
+        self.config.custom_llm_provider = getattr(
+            self.config, 'custom_llm_provider', None
+        )
+        self.config.max_output_tokens = getattr(self.config, 'max_output_tokens', None)
+        self.config.timeout = getattr(self.config, 'timeout', None)
+        self.config.temperature = getattr(self.config, 'temperature', 0.0)
+        self.config.top_p = getattr(self.config, 'top_p', 0.9)
+
         self._completion = partial(
             litellm_completion,
             model=self.config.model,

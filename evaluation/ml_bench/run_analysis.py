@@ -62,7 +62,7 @@ def extract_test_results(res_file_path: str) -> tuple[list[str], list[str]]:
         return passed, failed, costs
 
 
-def classify_error(llm: LLM, failed_case: dict) -> str:
+async def classify_error(llm: LLM, failed_case: dict) -> str:
     prompt = f"""
     Please classify the error for the following failed case based on the history and eval_output:
 
@@ -89,7 +89,7 @@ def classify_error(llm: LLM, failed_case: dict) -> str:
     """
 
     try:
-        response = llm.completion(messages=[{'content': prompt, 'role': 'user'}])
+        response = await llm.completion(messages=[{'content': prompt, 'role': 'user'}])
         error_category = response.choices[0].message['content']
     except Exception as e:
         logger.error(
