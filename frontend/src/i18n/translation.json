@@ -345,6 +345,16 @@
     "fr": "Sélectionner une langue",
     "tr": "Dil Seç"
   },
+  "CONFIGURATION$SECURITY_SELECT_LABEL": {
+    "en": "Security analyzer",
+    "de": "Sicherheitsanalysator",
+    "zh-CN": "安全分析器"
+  },
+  "CONFIGURATION$SECURITY_SELECT_PLACEHOLDER": {
+    "en": "Select a security analyzer (optional)",
+    "de": "Wählen Sie einen Sicherheitsanalysator (optional)",
+    "zh-CN": "选择一个安全分析器（可选）"
+  },
   "CONFIGURATION$MODAL_CLOSE_BUTTON_LABEL": {
     "en": "Close",
     "zh-CN": "关闭",
@@ -686,6 +696,26 @@
     "de": "Nach unten",
     "zh-CN": "回到底部"
   },
+  "SECURITY_ANALYZER$UNKNOWN_RISK": {
+    "en": "Unknown Risk",
+    "de": "Unbekanntes Risiko",
+    "zh-CN": "未知风险"
+  },
+  "SECURITY_ANALYZER$LOW_RISK": {
+    "en": "Low Risk",
+    "de": "Niedriges Risiko",
+    "zh-CN": "低风险"
+  },
+  "SECURITY_ANALYZER$MEDIUM_RISK": {
+    "en": "Medium Risk",
+    "de": "Mittleres Risiko",
+    "zh-CN": "中等风险"
+  },
+  "SECURITY_ANALYZER$HIGH_RISK": {
+    "en": "High Risk",
+    "de": "Hohes Risiko",
+    "zh-CN": "高风险"
+  },
   "SETTINGS$MODEL_TOOLTIP": {
     "en": "Select the language model to use.",
     "zh-CN": "选择要使用的语言模型",
@@ -728,6 +758,11 @@
   },
   "SETTINGS$AGENT_SELECT_ENABLED": {
     "en": "Enable Agent Selection - Advanced Users"
+  },
+  "SETTINGS$SECURITY_ANALYZER": {
+    "en": "Enable Security Analyzer",
+    "de": "Sicherheitsanalysator aktivieren",
+    "zh-CN": "启用安全分析器"
   },
   "BROWSER$EMPTY_MESSAGE": {
     "en": "No page loaded.",

@@ -7,3 +7,7 @@ export async function fetchModels() {
 export async function fetchAgents() {
   return request(`/api/options/agents`);
 }
+
+export async function fetchSecurityAnalyzers() {
+  return request(`/api/options/security-analyzers`);
+}

@@ -6,6 +6,7 @@ export type Settings = {
   LANGUAGE: string;
   LLM_API_KEY: string;
   CONFIRMATION_MODE: boolean;
+  SECURITY_ANALYZER: string;
 };
 
 type SettingsInput = Settings[keyof Settings];
@@ -16,6 +17,7 @@ export const DEFAULT_SETTINGS: Settings = {
   LANGUAGE: "en",
   LLM_API_KEY: "",
   CONFIRMATION_MODE: false,
+  SECURITY_ANALYZER: "",
 };
 
 const validKeys = Object.keys(DEFAULT_SETTINGS) as (keyof Settings)[];
@@ -56,6 +58,7 @@ export const getSettings = (): Settings => {
   const language = localStorage.getItem("LANGUAGE");
   const apiKey = localStorage.getItem("LLM_API_KEY");
   const confirmationMode = localStorage.getItem("CONFIRMATION_MODE") === "true";
+  const securityAnalyzer = localStorage.getItem("SECURITY_ANALYZER");
 
   return {
     LLM_MODEL: model || DEFAULT_SETTINGS.LLM_MODEL,
@@ -63,6 +66,7 @@ export const getSettings = (): Settings => {
     LANGUAGE: language || DEFAULT_SETTINGS.LANGUAGE,
     LLM_API_KEY: apiKey || DEFAULT_SETTINGS.LLM_API_KEY,
     CONFIRMATION_MODE: confirmationMode || DEFAULT_SETTINGS.CONFIRMATION_MODE,
+    SECURITY_ANALYZER: securityAnalyzer || DEFAULT_SETTINGS.SECURITY_ANALYZER,
   };
 };
 
@@ -75,7 +79,7 @@ export const saveSettings = (settings: Partial<Settings>) => {
     const isValid = validKeys.includes(key as keyof Settings);
     const value = settings[key as keyof Settings];
 
-    if (isValid && (value || typeof value === "boolean"))
+    if (isValid && typeof value !== "undefined")
       localStorage.setItem(key, value.toString());
   });
   localStorage.setItem("SETTINGS_VERSION", LATEST_SETTINGS_VERSION.toString());

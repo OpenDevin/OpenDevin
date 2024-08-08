@@ -14,6 +14,7 @@ from .event import Event, EventSource
 
 class EventStreamSubscriber(str, Enum):
     AGENT_CONTROLLER = 'agent_controller'
+    SECURITY_ANALYZER = 'security_analyzer'
     SERVER = 'server'
     RUNTIME = 'runtime'
     MAIN = 'main'
@@ -137,7 +138,8 @@ class EventStream:
         data = event_to_dict(event)
         if event.id is not None:
             self.file_store.write(self._get_filename_for_id(event.id), json.dumps(data))
-        for stack in self._subscribers.values():
+        for key in sorted(self._subscribers.keys()):
+            stack = self._subscribers[key]
             callback = stack[-1]
             asyncio.create_task(callback(event))
 

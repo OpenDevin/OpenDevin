@@ -11,6 +11,7 @@ interface SettingsFormProps {
   settings: Settings;
   models: string[];
   agents: string[];
+  securityAnalyzers: string[];
   disabled: boolean;
 
   onModelChange: (model: string) => void;
@@ -18,18 +19,21 @@ interface SettingsFormProps {
   onAgentChange: (agent: string) => void;
   onLanguageChange: (language: string) => void;
   onConfirmationModeChange: (confirmationMode: boolean) => void;
+  onSecurityAnalyzerChange: (securityAnalyzer: string) => void;
 }
 
 function SettingsForm({
   settings,
   models,
   agents,
+  securityAnalyzers,
   disabled,
   onModelChange,
   onAPIKeyChange,
   onAgentChange,
   onLanguageChange,
   onConfirmationModeChange,
+  onSecurityAnalyzerChange,
 }: SettingsFormProps) {
   const { t } = useTranslation();
   const { isOpen: isVisible, onOpenChange: onVisibleChange } = useDisclosure();
@@ -98,12 +102,26 @@ function SettingsForm({
       >
         {t(I18nKey.SETTINGS$AGENT_SELECT_ENABLED)}
       </Switch>
+      <AutocompleteCombobox
+        ariaLabel="securityanalyzer"
+        items={securityAnalyzers.map((securityAnalyzer) => ({
+          value: securityAnalyzer,
+          label: securityAnalyzer,
+        }))}
+        defaultKey={settings.SECURITY_ANALYZER}
+        onChange={onSecurityAnalyzerChange}
+        tooltip={t(I18nKey.SETTINGS$SECURITY_ANALYZER)}
+        disabled={disabled}
+      />
       <Switch
         aria-label="confirmationmode"
         data-testid="confirmationmode"
-        defaultSelected={settings.CONFIRMATION_MODE}
+        defaultSelected={
+          settings.CONFIRMATION_MODE || !!settings.SECURITY_ANALYZER
+        }
         onValueChange={onConfirmationModeChange}
-        isDisabled={disabled}
+        isDisabled={disabled || !!settings.SECURITY_ANALYZER}
+        isSelected={settings.CONFIRMATION_MODE}
       >
         <Tooltip
           content={t(I18nKey.SETTINGS$CONFIRMATION_MODE_TOOLTIP)}

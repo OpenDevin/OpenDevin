@@ -59,6 +59,8 @@ def event_to_dict(event: 'Event') -> dict:
         if key == 'source' and 'source' in d:
             d['source'] = d['source'].value
         props.pop(key, None)
+    if 'security_risk' in props and props['security_risk'] is None:
+        props.pop('security_risk')
     if 'action' in d:
         d['args'] = props
         if event.timeout is not None:

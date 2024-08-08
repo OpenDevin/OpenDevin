@@ -196,6 +196,17 @@ llm_config = 'gpt3'
 # Enable auto linting after editing
 #enable_auto_lint = false
 
+#################################### Security ###################################
+# Configuration for security features
+##############################################################################
+[security]
+
+# Enable confirmation mode
+#confirmation_mode = true
+
+# The security analyzer to use
+#security_analyzer = ""
+
 #################################### Eval ####################################
 # Configuration for the evaluation, please refer to the specific evaluation
 # plugin for the available options

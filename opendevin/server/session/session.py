@@ -80,8 +80,11 @@ class Session:
             key: value for key, value in data.get('args', {}).items() if value != ''
         }
         agent_cls = args.get(ConfigType.AGENT, self.config.default_agent)
-        confirmation_mode = args.get(
-            ConfigType.CONFIRMATION_MODE, self.config.confirmation_mode
+        self.config.security.confirmation_mode = args.get(
+            ConfigType.CONFIRMATION_MODE, self.config.security.confirmation_mode
+        )
+        self.config.security.security_analyzer = data.get('args', {}).get(
+            ConfigType.SECURITY_ANALYZER, self.config.security.security_analyzer
         )
         max_iterations = args.get(ConfigType.MAX_ITERATIONS, self.config.max_iterations)
         # override default LLM config
@@ -107,7 +110,6 @@ class Session:
                 runtime_name=self.config.runtime,
                 config=self.config,
                 agent=agent,
-                confirmation_mode=confirmation_mode,
                 max_iterations=max_iterations,
                 max_budget_per_task=self.config.max_budget_per_task,
                 agent_to_llm_config=self.config.get_agent_to_llm_config_map(),
@@ -133,6 +135,7 @@ class Session:
         if isinstance(event, NullObservation):
             return
         if event.source == EventSource.AGENT:
+            logger.info('Server event')
             await self.send(event_to_dict(event))
         elif event.source == EventSource.USER and isinstance(
             event, CmdOutputObservation

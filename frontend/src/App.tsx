@@ -1,6 +1,7 @@
 import { useDisclosure } from "@nextui-org/react";
 import React, { useEffect } from "react";
 import { Toaster } from "react-hot-toast";
+import { IoLockClosed } from "react-icons/io5";
 import CogTooth from "#/assets/cog-tooth";
 import ChatInterface from "#/components/chat/ChatInterface";
 import Errors from "#/components/Errors";
@@ -15,13 +16,20 @@ import VolumeIcon from "./components/VolumeIcon";
 import Terminal from "./components/terminal/Terminal";
 import Session from "#/services/session";
 import { getToken } from "#/services/auth";
-import { settingsAreUpToDate } from "#/services/settings";
+import { getSettings, settingsAreUpToDate } from "#/services/settings";
+import Security from "./components/modals/security/Security";
 
 interface Props {
   setSettingOpen: (isOpen: boolean) => void;
+  setSecurityOpen: (isOpen: boolean) => void;
+  showSecurityLock: boolean;
 }
 
-function Controls({ setSettingOpen }: Props): JSX.Element {
+function Controls({
+  setSettingOpen,
+  setSecurityOpen,
+  showSecurityLock,
+}: Props): JSX.Element {
   return (
     <div className="flex w-full p-4 bg-neutral-900 items-center shrink-0 justify-between">
       <div className="flex items-center gap-4">
@@ -33,6 +41,15 @@ function Controls({ setSettingOpen }: Props): JSX.Element {
         <div style={{ marginRight: "8px" }}>
           <VolumeIcon />
         </div>
+        {showSecurityLock && (
+          <div
+            className="cursor-pointer hover:opacity-80 transition-all"
+            style={{ marginRight: "8px" }}
+            onClick={() => setSecurityOpen(true)}
+          >
+            <IoLockClosed size={20} />
+          </div>
+        )}
         <div
           className="cursor-pointer hover:opacity-80 transition-all"
           onClick={() => setSettingOpen(true)}
@@ -59,6 +76,14 @@ function App(): JSX.Element {
     onOpen: onLoadPreviousSessionModalOpen,
     onOpenChange: onLoadPreviousSessionModalOpenChange,
   } = useDisclosure();
+
+  const {
+    isOpen: securityModalIsOpen,
+    onOpen: onSecurityModalOpen,
+    onOpenChange: onSecurityModalOpenChange,
+  } = useDisclosure();
+
+  const { SECURITY_ANALYZER } = getSettings();
 
   useEffect(() => {
     if (initOnce) return;
@@ -98,10 +123,18 @@ function App(): JSX.Element {
           secondClassName="flex flex-col overflow-hidden grow min-w-[500px]"
         />
       </div>
-      <Controls setSettingOpen={onSettingsModalOpen} />
+      <Controls
+        setSettingOpen={onSettingsModalOpen}
+        setSecurityOpen={onSecurityModalOpen}
+        showSecurityLock={!!SECURITY_ANALYZER}
+      />
       <SettingsModal
         isOpen={settingsModalIsOpen}
         onOpenChange={onSettingsModalOpenChange}
+      />
+      <Security
+        isOpen={securityModalIsOpen}
+        onOpenChange={onSecurityModalOpenChange}
       />
       <LoadPreviousSessionModal
         isOpen={loadPreviousSessionModalIsOpen}

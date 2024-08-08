@@ -2,8 +2,7 @@ from dataclasses import dataclass
 
 from opendevin.core.schema import ActionType
 
-from .action import Action
-
+from .action import Action, ActionSecurityRisk
 
 @dataclass
 class MessageAction(Action):
@@ -11,6 +10,7 @@ class MessageAction(Action):
     images_urls: list | None = None
     wait_for_response: bool = False
     action: str = ActionType.MESSAGE
+    security_risk: ActionSecurityRisk | None = None
 
     @property
     def message(self) -> str:

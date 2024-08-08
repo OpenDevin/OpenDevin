@@ -8,6 +8,7 @@ from opendevin.core.logger import opendevin_logger as logger
 from opendevin.events.stream import EventStream
 from opendevin.runtime import get_runtime_cls
 from opendevin.runtime.runtime import Runtime
+from opendevin.security import SecurityAnalyzer, options
 from opendevin.storage.files import FileStore
 
 
@@ -23,6 +24,7 @@ class AgentSession:
     file_store: FileStore
     controller: Optional[AgentController] = None
     runtime: Optional[Runtime] = None
+    security_analyzer: SecurityAnalyzer | None = None
     _closed: bool = False
 
     def __init__(self, sid: str, file_store: FileStore):
@@ -36,7 +38,6 @@ class AgentSession:
         runtime_name: str,
         config: AppConfig,
         agent: Agent,
-        confirmation_mode: bool,
         max_iterations: int,
         max_budget_per_task: float | None = None,
         agent_to_llm_config: dict[str, LLMConfig] | None = None,
@@ -50,10 +51,11 @@ class AgentSession:
             raise Exception(
                 'Session already started. You need to close this session and start a new one.'
             )
+        await self._create_security_analyzer(config.security.security_analyzer)
         await self._create_runtime(runtime_name, config, agent)
         await self._create_controller(
             agent,
-            confirmation_mode,
+            config.security.confirmation_mode,
             max_iterations,
             max_budget_per_task=max_budget_per_task,
             agent_to_llm_config=agent_to_llm_config,
@@ -68,7 +70,17 @@ class AgentSession:
             await self.controller.close()
         if self.runtime is not None:
             await self.runtime.close()
+        if self.security_analyzer is not None:
+            await self.security_analyzer.close()
         self._closed = True
+
+    async def _create_security_analyzer(self, security_analyzer: str | None):
+        """Creates a SecurityAnalyzer instance that will be used to analyze the agent actions."""
+        logger.info(f'Using security analyzer: {security_analyzer}')
+        if security_analyzer:
+            self.security_analyzer = options.SecurityAnalyzers.get(
+                security_analyzer, SecurityAnalyzer
+            )(self.event_stream)
 
     async def _create_runtime(self, runtime_name: str, config: AppConfig, agent: Agent):
         """Creates a runtime instance."""

@@ -141,6 +141,39 @@ class AgentConfig:
 
 
 @dataclass
+class SecurityConfig(metaclass=Singleton):
+    """Configuration for security related functionalities.
+
+    Attributes:
+        confirmation_mode: Whether to enable confirmation mode.
+        security_analyzer: The security analyzer to use.
+    """
+
+    confirmation_mode: bool = False
+    security_analyzer: str | None = None
+
+    def defaults_to_dict(self) -> dict:
+        """Serialize fields to a dict for the frontend, including type hints, defaults, and whether it's optional."""
+        dict = {}
+        for f in fields(self):
+            dict[f.name] = get_field_info(f)
+        return dict
+
+    def __str__(self):
+        attr_str = []
+        for f in fields(self):
+            attr_name = f.name
+            attr_value = getattr(self, f.name)
+
+            attr_str.append(f'{attr_name}={repr(attr_value)}')
+
+        return f"SecurityConfig({', '.join(attr_str)})"
+
+    def __repr__(self):
+        return self.__str__()
+
+
+@dataclass
 class SandboxConfig(metaclass=Singleton):
     """Configuration for the sandbox.
 
@@ -239,6 +272,7 @@ class AppConfig(metaclass=Singleton):
     agents: dict = field(default_factory=dict)
     default_agent: str = _DEFAULT_AGENT
     sandbox: SandboxConfig = field(default_factory=SandboxConfig)
+    security: SecurityConfig = field(default_factory=SecurityConfig)
     runtime: str = 'eventstream'
     file_store: str = 'memory'
     file_store_path: str = '/tmp/file_store'
@@ -251,7 +285,6 @@ class AppConfig(metaclass=Singleton):
     workspace_mount_rewrite: str | None = None
     cache_dir: str = '/tmp/cache'
     run_as_devin: bool = True
-    confirmation_mode: bool = False
     max_iterations: int = _MAX_ITERATIONS
     max_budget_per_task: float | None = None
     e2b_api_key: str = ''

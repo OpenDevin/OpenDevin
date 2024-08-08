@@ -3,7 +3,7 @@ from typing import ClassVar
 
 from opendevin.core.schema import ActionType
 
-from .action import Action
+from .action import Action, ActionSecurityRisk
 
 
 @dataclass
@@ -19,6 +19,7 @@ class FileReadAction(Action):
     thought: str = ''
     action: str = ActionType.READ
     runnable: ClassVar[bool] = True
+    security_risk: ActionSecurityRisk | None = None
 
     @property
     def message(self) -> str:
@@ -34,6 +35,7 @@ class FileWriteAction(Action):
     thought: str = ''
     action: str = ActionType.WRITE
     runnable: ClassVar[bool] = True
+    security_risk: ActionSecurityRisk | None = None
 
     @property
     def message(self) -> str:

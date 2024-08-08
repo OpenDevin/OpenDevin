@@ -13,6 +13,8 @@ interface BaseModalProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   title: string;
+  contentClassName?: string;
+  bodyClassName?: string;
   isDismissable?: boolean;
   subtitle?: string;
   actions?: Action[];
@@ -24,6 +26,8 @@ function BaseModal({
   isOpen,
   onOpenChange,
   title,
+  contentClassName = "max-w-[30rem] p-[40px]",
+  bodyClassName = "px-0 py-[20px]",
   isDismissable = true,
   subtitle = undefined,
   actions = [],
@@ -42,14 +46,16 @@ function BaseModal({
       size="sm"
       className="bg-neutral-900 rounded-lg"
     >
-      <ModalContent className="max-w-[30rem] p-[40px]">
+      <ModalContent className={contentClassName}>
         {(closeModal) => (
           <>
-            <ModalHeader className="flex flex-col p-0">
-              <HeaderContent title={title} subtitle={subtitle} />
-            </ModalHeader>
+            {title && (
+              <ModalHeader className="flex flex-col p-0">
+                <HeaderContent title={title} subtitle={subtitle} />
+              </ModalHeader>
+            )}
 
-            <ModalBody className="px-0 py-[20px]">{children}</ModalBody>
+            <ModalBody className={bodyClassName}>{children}</ModalBody>
 
             {actions && actions.length > 0 && (
               <ModalFooter className="flex-col flex justify-start p-0">
