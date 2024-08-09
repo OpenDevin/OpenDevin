@@ -167,6 +167,9 @@ if __name__ == '__main__':
     dataset = prepare_dataset(
         dataset_df, output_file=output_file, eval_n_limit=args.eval_n_limit
     )
+    url = 'https://raw.githubusercontent.com/ShishirPatil/gorilla/main/eval/eval-scripts/codebleu/parser/my-languages.so'
+    response = requests.get(url)
+    with open('evaluation/gorilla/my-languages.so','wb') as f: f.write(response.content)
 
     asyncio.run(
         run_evaluation(
