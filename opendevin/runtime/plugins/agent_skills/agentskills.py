@@ -519,6 +519,11 @@ def _edit_file_impl(
 
     try:
         n_added_lines = None
+
+        # lint the origianl file
+        if ENABLE_AUTO_LINT:
+            original_lint_error, _ = _lint_file(file_name)
+
         # Create a temporary file
         with tempfile.NamedTemporaryFile('w', delete=False) as temp_file:
             temp_file_path = temp_file.name
@@ -565,6 +570,30 @@ def _edit_file_impl(
                 f.writelines(lines)
 
             lint_error, first_error_line = _lint_file(file_name)
+            
+            # Select the errors caused by the modification
+            def extract_last_part(line):
+                parts = line.split(':')
+                if len(parts) > 1:
+                    return parts[-1].strip()
+                return line.strip()
+
+            def subtract_strings(str1, str2) -> str:
+                lines1 = str1.splitlines()
+                lines2 = str2.splitlines()
+
+                last_parts1 = [extract_last_part(line) for line in lines1]
+
+                remaining_lines = [line for line in lines2 if extract_last_part(line) not in last_parts1]
+
+                result = '\n'.join(remaining_lines)
+                return result
+            if original_lint_error and lint_error:
+                lint_error = subtract_strings(original_lint_error, lint_error)
+                if lint_error == "":
+                    lint_error = None
+                    first_error_line = None
+
             if lint_error is not None:
                 if first_error_line is not None:
                     show_line = int(first_error_line)

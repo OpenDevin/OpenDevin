@@ -604,6 +604,54 @@ check(any_int)"""
             assert result == expected
 
 
+def test_edit_file_by_replace_with_multiple_errors(tmp_path, monkeypatch):
+    # If the file has multiple errors, but the suggested modification can only fix one error, make sure it is applied.
+    # Set environment variable via monkeypatch does NOT work!
+    monkeypatch.setattr(
+        'opendevin.runtime.plugins.agent_skills.agentskills.ENABLE_AUTO_LINT', True
+    )
+
+    content = """def Sum(a,b):
+    try:
+        answer = a + b
+        return answer
+    except Exception:
+        answer = ANOTHER_CONSTANT
+        return answer
+Sum(1,1)
+"""
+
+    temp_file_path = tmp_path / 'problematic-file-test.py'
+    temp_file_path.write_text(content)
+
+    open_file(str(temp_file_path))
+
+    with io.StringIO() as buf:
+        with contextlib.redirect_stdout(buf):
+            edit_file_by_replace(
+                str(temp_file_path),
+                to_replace='        answer = a + b',
+                new_content='        answer = a+b',
+            )
+        result = buf.getvalue()
+        expected = (
+            f'[File: {temp_file_path} (8 lines total after edit)]\n'
+            '(this is the beginning of the file)\n'
+            '1|def Sum(a,b):\n'
+            '2|    try:\n'
+            '3|        answer = a+b\n'
+            '4|        return answer\n'
+            '5|    except Exception:\n'
+            '6|        answer = ANOTHER_CONSTANT\n'
+            '7|        return answer\n'
+            '8|Sum(1,1)\n'
+            '(this is the end of the file)\n'
+            + MSG_FILE_UPDATED.format(line_number=3)
+            + '\n'
+        )
+        assert result.split('\n') == expected.split('\n')
+
+
 # ================================
 
 
