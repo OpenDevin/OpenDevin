@@ -69,7 +69,7 @@ for tag in "${tags[@]}"; do
   args+=" -t $DOCKER_REPOSITORY:$tag"
 done
 
-output_image="/tmp/${image_name}_image_${platform}.tar"
+output_image="/tmp/${image_name}-${tags[0]}-docker-image-${platform}.tar"
 
 docker buildx build \
   $args \

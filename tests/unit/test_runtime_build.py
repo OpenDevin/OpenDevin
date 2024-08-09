@@ -62,7 +62,7 @@ def test_put_source_code_to_dir(temp_dir):
 def test_docker_build_folder(temp_dir):
     prep_docker_build_folder(
         temp_dir,
-        base_image='ubuntu:22.04',
+        base_image='nikolaik/python-nodejs:python3.11-nodejs22',
         skip_init=False,
     )
 
@@ -81,14 +81,14 @@ def test_docker_build_folder(temp_dir):
 def test_hash_folder_same(temp_dir):
     dir_hash_1 = prep_docker_build_folder(
         temp_dir,
-        base_image='ubuntu:22.04',
+        base_image='nikolaik/python-nodejs:python3.11-nodejs22',
         skip_init=False,
     )
 
     with tempfile.TemporaryDirectory() as temp_dir_2:
         dir_hash_2 = prep_docker_build_folder(
             temp_dir_2,
-            base_image='ubuntu:22.04',
+            base_image='nikolaik/python-nodejs:python3.11-nodejs22',
             skip_init=False,
         )
     assert dir_hash_1 == dir_hash_2
@@ -97,14 +97,14 @@ def test_hash_folder_same(temp_dir):
 def test_hash_folder_diff_init(temp_dir):
     dir_hash_1 = prep_docker_build_folder(
         temp_dir,
-        base_image='ubuntu:22.04',
+        base_image='nikolaik/python-nodejs:python3.11-nodejs22',
         skip_init=False,
     )
 
     with tempfile.TemporaryDirectory() as temp_dir_2:
         dir_hash_2 = prep_docker_build_folder(
             temp_dir_2,
-            base_image='ubuntu:22.04',
+            base_image='nikolaik/python-nodejs:python3.11-nodejs22',
             skip_init=True,
         )
     assert dir_hash_1 != dir_hash_2
@@ -113,7 +113,7 @@ def test_hash_folder_diff_init(temp_dir):
 def test_hash_folder_diff_image(temp_dir):
     dir_hash_1 = prep_docker_build_folder(
         temp_dir,
-        base_image='ubuntu:22.04',
+        base_image='nikolaik/python-nodejs:python3.11-nodejs22',
         skip_init=False,
     )
 
@@ -178,11 +178,12 @@ def test_get_runtime_image_repo_and_tag_eventstream():
         and img_tag == f'{OD_VERSION}_image_debian_tag_11'
     )
 
-    base_image = 'ubuntu:22.04'
+    base_image = 'nikolaik/python-nodejs:python3.11-nodejs22'
     img_repo, img_tag = get_runtime_image_repo_and_tag(base_image)
     assert (
         img_repo == f'{RUNTIME_IMAGE_REPO}'
-        and img_tag == f'{OD_VERSION}_image_ubuntu_tag_22.04'
+        and img_tag
+        == f'{OD_VERSION}_image_nikolaik___python-nodejs_tag_python3.11-nodejs22'
     )
 
     base_image = 'ubuntu'

@@ -67,7 +67,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.image }}-docker-image-${{ matrix.platform }}
-          path: /tmp/${{ matrix.image }}_image_${{ matrix.platform }}.tar
+          path: /tmp/${{ matrix.image }}-docker-image-${{ matrix.platform }}.tar
           retention-days: 14
 
   # Builds the runtime Docker images
@@ -75,13 +75,15 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       tags: ${{ steps.capture-tags.outputs.tags }}
+      # use the first tag to name the artifact
+      first_tags: ${{ steps.capture-first-tags.outputs.first_tags }}
     permissions:
       contents: read
       packages: write
     strategy:
       matrix:
         image: ['od_runtime']
-        base_image: ['ubuntu:22.04']
+        base_image: ['nikolaik/python-nodejs:python3.11-nodejs22', 'python:3.11-bookworm', 'node:22-bookworm']
         platform: ['amd64', 'arm64']
     steps:
       - name: Checkout
@@ -115,32 +117,41 @@ jobs:
       - name: Install Python dependencies using Poetry
         run: make install-python-dependencies
       - name: Create source distribution and Dockerfile
-        run: poetry run python3 opendevin/runtime/utils/runtime_build.py --base_image ${{ matrix.base_image }} --build_folder containers/runtime
+        run: poetry run python3 opendevin/runtime/utils/runtime_build.py --base_image ${{ matrix.base_image }} --build_folder containers/runtime --force_rebuild
       - name: Build and export image
         id: build
         run: |
           if [ -f 'containers/runtime/Dockerfile' ]; then
             echo 'Dockerfile detected, building runtime image...'
             ./containers/build.sh ${{ matrix.image }} ${{ github.repository_owner }} ${{ matrix.platform }}
+            # Capture the first tag to use in the artifact name
+            first_tag=$(cat tags.txt | awk '{print $1}')
           else
             echo 'No Dockerfile detected which means an exact image is already built. Pulling the image and saving it to a tar file...'
             source containers/runtime/config.sh
             echo "$DOCKER_IMAGE_TAG $DOCKER_IMAGE_HASH_TAG" >> tags.txt
-            echo "Pulling image $DOCKER_IMAGE/$DOCKER_IMAGE_HASH_TAG to /tmp/${{ matrix.image }}_image_${{ matrix.platform }}.tar"
+            first_tag=$DOCKER_IMAGE_TAG
+            echo "Pulling image $DOCKER_IMAGE:$DOCKER_IMAGE_HASH_TAG to /tmp/${{ matrix.image }}-${first_tag}-docker-image-${{ matrix.platform }}.tar"
             docker pull $DOCKER_IMAGE:$DOCKER_IMAGE_HASH_TAG
-            docker save $DOCKER_IMAGE:$DOCKER_IMAGE_HASH_TAG -o /tmp/${{ matrix.image }}_image_${{ matrix.platform }}.tar
+            docker save $DOCKER_IMAGE:$DOCKER_IMAGE_HASH_TAG -o /tmp/${{ matrix.image }}_${first_tag}_image_${{ matrix.platform }}.tar
           fi
+          echo "first_tag=${first_tag}" >> $GITHUB_OUTPUT
       - name: Capture tags
         id: capture-tags
         run: |
           tags=$(cat tags.txt)
           echo "tags=$tags"
           echo "tags=$tags" >> $GITHUB_OUTPUT
+      - name: Capture first tags
+        id: capture-first-tags
+        run: |
+          first_tags=$(echo "${{ steps.build.outputs.first_tag }}" | jq -R -s -c 'split("\n")[:-1]')
+          echo "first_tags=$first_tags" >> $GITHUB_OUTPUT
       - name: Upload Docker image as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.image }}-docker-image-${{ matrix.platform }}
-          path: /tmp/${{ matrix.image }}_image_${{ matrix.platform }}.tar
+          name: ${{ matrix.image }}-${{ steps.build.outputs.first_tag }}-docker-image-${{ matrix.platform }}
+          path: /tmp/${{ matrix.image }}_${{ steps.build.outputs.first_tag }}_image_${{ matrix.platform }}.tar
           retention-days: 14
 
   # Run unit tests with the EventStream and Server runtime Docker images
@@ -151,16 +162,13 @@ jobs:
     strategy:
       matrix:
         runtime_type: ['eventstream']
+        first_tag: ${{ fromJson(needs.ghcr_build_runtime.outputs.first_tags) }}
     steps:
       - uses: actions/checkout@v4
       - name: Free Disk Space (Ubuntu)
         uses: jlumbroso/free-disk-space@main
         with:
-          # this might remove tools that are actually needed,
-          # when set to "true" but frees about 6 GB
           tool-cache: true
-          # all of these default to true, but feel free to set to
-          # "false" if necessary for your workflow
           android: true
           dotnet: true
           haskell: true
@@ -176,27 +184,23 @@ jobs:
       - name: Install Python dependencies using Poetry
         run: make install-python-dependencies
       - name: Download Runtime Docker image
-        if: matrix.runtime_type == 'eventstream'
         uses: actions/download-artifact@v4
         with:
-          name: od_runtime-docker-image-amd64
-          path: /tmp/
-      - name: Download Sandbox Docker image
-        if: matrix.runtime_type == 'server'
-        uses: actions/download-artifact@v4
-        with:
-          name: sandbox-docker-image-amd64
+          name: od_runtime-${{ matrix.first_tag }}-docker-image-amd64
           path: /tmp/
       - name: Load Runtime image and run runtime tests
         run: |
-          # Load the Docker image and capture the output
-          if [ "${{ matrix.runtime_type }}" == "eventstream" ]; then
-            output=$(docker load -i /tmp/od_runtime_image_amd64.tar)
-          else
-            output=$(docker load -i /tmp/sandbox_image_amd64.tar)
+          image_file=$(find /tmp -name "od_runtime_${{ matrix.first_tag }}_image_amd64.tar" | head -n 1)
+
+          if [ -z "$image_file" ]; then
+            echo "No matching image file found for tag: ${{ matrix.first_tag }}"
+            exit 1
           fi
 
-          # Extract the first image name from the output
+          echo "Loading image from file: $image_file"
+          output=$(docker load -i "$image_file")
+
+          # Extract the image name from the output
           image_name=$(echo "$output" | grep -oP 'Loaded image: \K.*' | head -n 1)
 
           # Print the full name of the image
@@ -217,8 +221,8 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ['3.11']
-        # server is tested in a separate workflow
         runtime_type: ['eventstream']
+        first_tag: ${{ fromJson(needs.ghcr_build_runtime.outputs.first_tags) }}
     steps:
       - uses: actions/checkout@v4
       - name: Install poetry via pipx
@@ -233,19 +237,21 @@ jobs:
       - name: Download Runtime Docker image
         uses: actions/download-artifact@v4
         with:
-          name: od_runtime-docker-image-amd64
+          name: od_runtime-${{ matrix.first_tag }}-docker-image-amd64
           path: /tmp/
       - name: Load runtime image and run integration tests
         run: |
-          # Load the Docker image and capture the output
-          if [ "${{ matrix.runtime_type }}" == "eventstream" ]; then
-            output=$(docker load -i /tmp/od_runtime_image_amd64.tar)
-          else
-            echo "No Runtime Docker image to load"
+          image_file=$(find /tmp -name "od_runtime_${{ matrix.first_tag }}_image_amd64.tar" | head -n 1)
+
+          if [ -z "$image_file" ]; then
+            echo "No matching image file found for tag: ${{ matrix.first_tag }}"
             exit 1
           fi
 
-          # Extract the first image name from the output
+          echo "Loading image from file: $image_file"
+          output=$(docker load -i "$image_file")
+
+          # Extract the image name from the output
           image_name=$(echo "$output" | grep -oP 'Loaded image: \K.*' | head -n 1)
 
           # Print the full name of the image
@@ -313,6 +319,7 @@ jobs:
       matrix:
         image: ['od_runtime']
         platform: ['amd64', 'arm64']
+        first_tag: ${{ fromJson(needs.ghcr_build_runtime.outputs.first_tags) }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -335,7 +342,7 @@ jobs:
       - name: Download Docker images
         uses: actions/download-artifact@v4
         with:
-          name: ${{ matrix.image }}-docker-image-${{ matrix.platform }}
+          name: ${{ matrix.image }}-${{ matrix.first_tag }}-docker-image-${{ matrix.platform }}
           path: /tmp/${{ matrix.platform }}
       - name: List downloaded files
         run: |
@@ -343,7 +350,7 @@ jobs:
           file /tmp/${{ matrix.platform }}/*
       - name: Load images and push to registry
         run: |
-          mv /tmp/${{ matrix.platform }}/${{ matrix.image }}_image_${{ matrix.platform }}.tar ./${{ matrix.image }}_image_${{ matrix.platform }}.tar
+          mv /tmp/${{ matrix.platform }}/${{ matrix.image }}_${{ matrix.first_tag }}_image_${{ matrix.platform }}.tar ./${{ matrix.image }}_image_${{ matrix.platform }}.tar
           if ! loaded_image=$(docker load -i ${{ matrix.image }}_image_${{ matrix.platform }}.tar | grep "Loaded image:" | head -n 1 | awk '{print $3}'); then
             echo "Failed to load Docker image"
             exit 1

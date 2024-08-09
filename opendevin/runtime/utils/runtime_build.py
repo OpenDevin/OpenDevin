@@ -239,6 +239,7 @@ def build_runtime_image(
     extra_deps: str | None = None,
     docker_build_folder: str | None = None,
     dry_run: bool = False,
+    force_rebuild: bool = False,
 ) -> str:
     """Build the runtime image for the OpenDevin runtime.
 
@@ -277,7 +278,10 @@ def build_runtime_image(
     # 2. If the exact hash is not found, we will FIRST try to re-build it
     # by leveraging the non-hash `generic_runtime_image_name` to save some time
     # from re-building the dependencies (e.g., poetry install, apt install)
-    elif _check_image_exists(generic_runtime_image_name, docker_client):
+    elif (
+        _check_image_exists(generic_runtime_image_name, docker_client)
+        and not force_rebuild
+    ):
         logger.info(
             f'Cannot find matched hash for image [{hash_runtime_image_name}]\n'
             f'Will try to re-build it from latest [{generic_runtime_image_name}] image to potentially save '
@@ -319,6 +323,10 @@ def build_runtime_image(
     # 3. If the image is not found AND we cannot re-use the non-hash latest relavant image,
     # we will build it completely from scratch
     else:
+        if force_rebuild:
+            logger.info(
+                f'Force re-build: Will try to re-build image [{generic_runtime_image_name}] from scratch.\n'
+            )
         cur_docker_build_folder = docker_build_folder or tempfile.mkdtemp()
         _new_from_scratch_hash = prep_docker_build_folder(
             cur_docker_build_folder,
@@ -352,8 +360,11 @@ def build_runtime_image(
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--base_image', type=str, default='ubuntu:22.04')
+    parser.add_argument(
+        '--base_image', type=str, default='nikolaik/python-nodejs:python3.11-nodejs22'
+    )
     parser.add_argument('--build_folder', type=str, default=None)
+    parser.add_argument('--force_rebuild', action='store_true', default=False)
     args = parser.parse_args()
 
     if args.build_folder is not None:
@@ -373,6 +384,7 @@ if __name__ == '__main__':
                 docker_client=docker.from_env(),
                 docker_build_folder=temp_dir,
                 dry_run=True,
+                force_rebuild=args.force_rebuild,
             )
             _runtime_image_repo, runtime_image_hash_tag = runtime_image_hash_name.split(
                 ':'

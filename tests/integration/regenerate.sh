@@ -55,12 +55,8 @@ cd "$PROJECT_ROOT" || exit 1
 
 mkdir -p $WORKSPACE_BASE
 
-# use environmental variable if exists, otherwise use "ssh"
-TEST_RUNTIME="${TEST_RUNTIME:-eventstream}"  # can be server or eventstream
-# TODO: set this as default after ServerRuntime is deprecated
-if [ "$TEST_RUNTIME" == "eventstream" ] && [ -z "$SANDBOX_CONTAINER_IMAGE" ]; then
-  SANDBOX_CONTAINER_IMAGE="ubuntu:22.04"
-fi
+# use environmental variable if exists
+TEST_RUNTIME="${TEST_RUNTIME:-eventstream}"
 
 MAX_ITERATIONS=15
 echo "TEST_RUNTIME: $TEST_RUNTIME"
