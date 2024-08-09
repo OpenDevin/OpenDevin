@@ -88,7 +88,7 @@
     "prettier": "^3.3.3",
     "tailwindcss": "^3.4.9",
     "typescript": "^5.5.4",
-    "vite-tsconfig-paths": "^4.3.2",
+    "vite-tsconfig-paths": "^5.0.1",
     "vitest": "^1.6.0"
   },
   "packageManager": "npm@10.5.0",
