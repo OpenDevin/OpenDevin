@@ -18,13 +18,6 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Install Python if not already installed
-RUN if [ ! -e /usr/bin/python ]; then \
-    apt-get update && \
-    apt-get install -y python3 && \
-    ln -s /usr/bin/python3 /usr/bin/python; \
-fi
-
 # Create necessary directories
 RUN mkdir -p /opendevin && \
     mkdir -p /opendevin/logs && \

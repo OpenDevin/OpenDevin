@@ -174,7 +174,7 @@ llm_config = 'gpt3'
 #user_id = 1000
 
 # Container image to use for the sandbox
-#container_image = "ghcr.io/opendevin/sandbox:main"
+#container_image = "nikolaik/python-nodejs:python3.11-nodejs22"
 
 # Use host network
 #use_host_network = false

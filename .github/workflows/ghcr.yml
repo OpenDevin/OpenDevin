@@ -81,7 +81,7 @@ jobs:
     strategy:
       matrix:
         image: ['od_runtime']
-        base_image: ['ubuntu:22.04']
+        base_image: ['nikolaik/python-nodejs:python3.11-nodejs22']
         platform: ['amd64', 'arm64']
     steps:
       - name: Checkout
@@ -115,7 +115,7 @@ jobs:
       - name: Install Python dependencies using Poetry
         run: make install-python-dependencies
       - name: Create source distribution and Dockerfile
-        run: poetry run python3 opendevin/runtime/utils/runtime_build.py --base_image ${{ matrix.base_image }} --build_folder containers/runtime
+        run: poetry run python3 opendevin/runtime/utils/runtime_build.py --base_image ${{ matrix.base_image }} --build_folder containers/runtime --force_rebuild
       - name: Build and export image
         id: build
         run: |

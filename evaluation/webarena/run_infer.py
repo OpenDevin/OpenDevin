@@ -54,7 +54,7 @@ def get_config(
         runtime='eventstream',
         max_iterations=metadata.max_iterations,
         sandbox=SandboxConfig(
-            container_image='ubuntu:22.04',
+            container_image='python:3.11-bookworm',
             enable_auto_lint=True,
             use_host_network=False,
             browsergym_eval_env=env_id,

@@ -59,7 +59,7 @@ mkdir -p $WORKSPACE_BASE
 TEST_RUNTIME="${TEST_RUNTIME:-eventstream}"  # can be server or eventstream
 # TODO: set this as default after ServerRuntime is deprecated
 if [ "$TEST_RUNTIME" == "eventstream" ] && [ -z "$SANDBOX_CONTAINER_IMAGE" ]; then
-  SANDBOX_CONTAINER_IMAGE="ubuntu:22.04"
+  SANDBOX_CONTAINER_IMAGE="nikolaik/python-nodejs:python3.11-nodejs22"
 fi
 
 MAX_ITERATIONS=15

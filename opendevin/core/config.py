@@ -166,9 +166,7 @@ class SandboxConfig(metaclass=Singleton):
     """
 
     api_hostname: str = 'localhost'
-    container_image: str = (
-        'ubuntu:22.04'  # default to ubuntu:22.04 for eventstream runtime
-    )
+    container_image: str = 'nikolaik/python-nodejs:python3.11-nodejs22'  # default to nikolaik/python-nodejs:python3.11-nodejs22 for eventstream runtime
     user_id: int = os.getuid() if hasattr(os, 'getuid') else 1000
     timeout: int = 120
     enable_auto_lint: bool = (
