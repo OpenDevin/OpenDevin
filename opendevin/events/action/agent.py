@@ -78,4 +78,8 @@ class AgentDelegateAction(Action):
 
     @property
     def message(self) -> str:
-        return f"I'm asking {self.agent} for help with this task."
+        msg = ''
+        if self.thought:
+            msg += self.thought + '\n'
+        msg += f"I'm asking {self.agent} for help with this task."
+        return msg

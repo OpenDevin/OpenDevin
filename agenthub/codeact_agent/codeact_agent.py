@@ -195,6 +195,11 @@ class CodeActAgent(Agent):
             ),
         ]
 
+        if 'task' in state.inputs:
+            messages.append(
+                Message(role='user', content=[TextContent(text=state.inputs['task'])]),
+            )
+
         for event in state.history.get_events():
             # create a regular message from an event
             if isinstance(event, Action):
