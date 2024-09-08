@@ -10,9 +10,17 @@ import_functions(
     module=file_reader, function_names=file_reader.__all__, target_globals=globals()
 )
 __all__ = file_ops.__all__ + file_reader.__all__
+__except__ = [
+    'edit_file_by_replace',
+    'insert_content_at_line',
+    'append_file',
+]  ## DISABLED TEMPORARILY.
 
 DOCUMENTATION = ''
 for func_name in __all__:
+    if func_name in __except__:
+        continue
+
     func = globals()[func_name]
 
     cur_doc = func.__doc__

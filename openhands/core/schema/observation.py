@@ -10,6 +10,10 @@ class ObservationTypeSchema(BaseModel):
 
     WRITE: str = Field(default='write')
 
+    EDIT: str = Field(default='edit')
+    """The edited file
+    """
+
     BROWSE: str = Field(default='browse')
     """The HTML content of a URL
     """

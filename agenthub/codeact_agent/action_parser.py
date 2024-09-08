@@ -6,6 +6,7 @@ from openhands.events.action import (
     AgentDelegateAction,
     AgentFinishAction,
     CmdRunAction,
+    FileEditAction,
     IPythonRunCellAction,
     MessageAction,
 )
@@ -16,6 +17,7 @@ class CodeActResponseParser(ResponseParser):
     - CmdRunAction(command) - bash command to run
     - IPythonRunCellAction(code) - IPython code to run
     - AgentDelegateAction(agent, inputs) - delegate action for (sub)task
+    - FileEditAction(diff_block) - Search/Replace block to edit.
     - MessageAction(content) - Message action to run (e.g. ask for clarification)
     - AgentFinishAction() - end the interaction
     """
@@ -28,6 +30,7 @@ class CodeActResponseParser(ResponseParser):
             CodeActActionParserCmdRun(),
             CodeActActionParserIPythonRunCell(),
             CodeActActionParserAgentDelegate(),
+            CodeActActionParserFileEdit(),
         ]
         self.default_parser = CodeActActionParserMessage()
 
@@ -39,11 +42,10 @@ class CodeActResponseParser(ResponseParser):
         action = response.choices[0].message.content
         if action is None:
             return ''
-        for lang in ['bash', 'ipython', 'browse']:
+        for lang in ['bash', 'ipython', 'edit', 'browse']:
             # special handling for DeepSeek: it has stop-word bug and returns </execute_ipython instead of </execute_ipython>
             if f'</execute_{lang}' in action and f'</execute_{lang}>' not in action:
                 action = action.replace(f'</execute_{lang}', f'</execute_{lang}>')
-
             if f'<execute_{lang}>' in action and f'</execute_{lang}>' not in action:
                 action += f'</execute_{lang}>'
         return action
@@ -160,6 +162,33 @@ class CodeActActionParserAgentDelegate(ActionParser):
         browse_actions = self.agent_delegate.group(1).strip()
         task = f'{thought}. I should start with: {browse_actions}'
         return AgentDelegateAction(agent='BrowsingAgent', inputs={'task': task})
+
+
+class CodeActActionParserFileEdit(ActionParser):
+    """Parser action:
+    - FileEditAction(diff_block) - Search/Replace block to edit.
+    """
+
+    def __init__(
+        self,
+    ):
+        self.diff_block = None
+
+    def check_condition(self, action_str: str) -> bool:
+        self.diff_block = re.search(
+            r'<execute_edit>(.*)</execute_edit>', action_str, re.DOTALL
+        )
+        return self.diff_block is not None
+
+    def parse(self, action_str: str) -> Action:
+        assert (
+            self.diff_block is not None
+        ), 'self.diff_block should not be None when parse is called'
+        thought = action_str.replace(self.diff_block.group(0), '').strip()
+        return FileEditAction(
+            diff_block=self.diff_block.group(1).strip(),
+            thought=thought,
+        )
 
 
 class CodeActActionParserMessage(ActionParser):

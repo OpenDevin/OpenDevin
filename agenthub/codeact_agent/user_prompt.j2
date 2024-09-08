@@ -19,8 +19,11 @@ OBSERVATION:
 
 ASSISTANT:
 Now I will write the Python code for starting a web server and save it to the file `app.py`:
-<execute_ipython>
-EDITED_CODE="""from flask import Flask
+<execute_edit>
+app.py
+<<<<<<< SEARCH
+=======
+from flask import Flask
 app = Flask(__name__)
 
 @app.route('/')
@@ -29,30 +32,14 @@ def index():
     return str(numbers)
 
 if __name__ == '__main__':
-    app.run(port=5000)"""
+    app.run(port=5000)
+>>>>>>> REPLACE
+</execute_edit>
 
-insert_content_at_line(
-  'app.py',
-  1,
-  EDITED_CODE,
-)
-</execute_ipython>
 
 USER:
 OBSERVATION:
-(this is the beginning of the file)
-1|from flask import Flask
-2|app = Flask(__name__)
-3|
-4|@app.route('/')
-5|def index():
-6|    numbers = list(range(1, 11))
-7|    return str(numbers)
-8|
-9|if __name__ == '__main__':
-10|    app.run(port=5000)
-(this is the end of the file)
-[File updated (edited at line 1). Please review the changes and make sure they are correct (correct indentation, no duplicate lines, etc). Edit the file again if necessary.]
+I edited the file app.py.
 
 ASSISTANT:
 I have created a Python file `app.py` that will display a list of numbers from 1 to 10 when you run it. Let me run the Python file for you:
@@ -177,13 +164,14 @@ USER:
 
 ASSISTANT:
 I should edit the file to display the numbers in a table format. I should include correct indentation. Let me update the file:
-<execute_ipython>
-edit_file_by_replace(
-  'app.py',
-  to_replace="    return str(numbers)",
-  new_content="    return '<table>' + ''.join([f'<tr><td>{i}</td></tr>' for i in numbers]) + '</table>'",
-)
-</execute_ipython>
+<execute_edit>
+app.py
+<<<<<<< SEARCH
+    return str(numbers)
+=======
+    return '<table>' + ''.join([f'<tr><td>{i}</td></tr>' for i in numbers]) + '</table>'
+>>>>>>> REPLACE
+</execute_edit>
 
 USER:
 Observation:
