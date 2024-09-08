@@ -530,7 +530,7 @@ class RuntimeClient:
 
     async def edit(self, action: FileEditAction) -> Observation:
         diff_blocks = re.search(
-            f'(.*){HEAD}(.*){DIVIDER}(.*){TAIL}', action.diff_block, re.DOTALL
+            f'(.*){HEAD}\n(.*)\n{DIVIDER}\n(.*)\n{TAIL}', action.diff_block, re.DOTALL
         )
         if not diff_blocks or len(diff_blocks.groups()) < 3:
             return ErrorObservation(
@@ -538,8 +538,8 @@ class RuntimeClient:
             )
 
         path = diff_blocks.group(1).strip()
-        search_block = diff_blocks.group(2).strip()
-        replace_block = diff_blocks.group(3).strip()
+        search_block = diff_blocks.group(2)
+        replace_block = diff_blocks.group(3)
 
         working_dir = self._get_working_directory()
         filepath = self._resolve_path(path, working_dir)
