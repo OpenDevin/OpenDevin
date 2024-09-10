@@ -23,7 +23,7 @@ Or <execute_browse> Tell me what is in http://example.com </execute_browse>.
 {% set EDIT_DIFF_PREFIX %}
 The assistant can edit files with <execute_edit> and </execute_edit>. Each change must be described with a SEARCH/REPLACE block.
 Every SEARCH section must EXACTLY MATCH the existing file content, character for character, including all comments, docstrings, etc. SEARCH/REPLACE blocks will replace all matching occurrences. Include enough lines to make the SEARCH blocks uniquely match the lines to change.
-Keep SEARCH/REPLACE blocks concise. Break large SEARCH/REPLACE blocks into a series of smaller blocks that each change a small portion of the file.
+Keep SEARCH/REPLACE blocks as concise as possible. Break large SEARCH/REPLACE blocks into a series of smaller blocks that each change a small portion of the file.
 To move code within a file, use 2 SEARCH/REPLACE blocks: 1 to delete it from its current location, 1 to insert it in the new location.
 If you want to put code in a new file, use a SEARCH/REPLACE block with: a new file path, an empty `SEARCH` section and the new file's contents in the `REPLACE` section.
 

@@ -6,6 +6,7 @@ import_functions(
 )
 __all__ = file_ops.__all__
 
+create_file = file_ops.create_file
 append_file = file_ops.append_file
 edit_file_by_replace = file_ops.edit_file_by_replace
 insert_content_at_line = file_ops.insert_content_at_line

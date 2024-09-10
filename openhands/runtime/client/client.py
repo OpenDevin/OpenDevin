@@ -53,6 +53,7 @@ from openhands.runtime.plugins import (
 )
 from openhands.runtime.plugins.agent_skills.file_ops import (
     append_file,
+    create_file,
     edit_file_by_replace,
 )
 from openhands.runtime.utils import split_bash_commands
@@ -530,25 +531,34 @@ class RuntimeClient:
 
     async def edit(self, action: FileEditAction) -> Observation:
         diff_blocks = re.search(
-            f'(.*){HEAD}\n(.*)\n{DIVIDER}\n(.*)\n{TAIL}', action.diff_block, re.DOTALL
+            f'(.*)\n{HEAD}(.*)\n{DIVIDER}(.*)\n{TAIL}', action.diff_block, re.DOTALL
         )
         if not diff_blocks or len(diff_blocks.groups()) < 3:
             return ErrorObservation(
                 'Could not resolve diff block into search/replace blocks.'
             )
 
-        path = diff_blocks.group(1).strip()
+        path = diff_blocks.group(1)
         search_block = diff_blocks.group(2)
         replace_block = diff_blocks.group(3)
+        if search_block:
+            search_block = search_block[1:]
+        if replace_block:
+            replace_block = replace_block[1:]
 
         working_dir = self._get_working_directory()
         filepath = self._resolve_path(path, working_dir)
         if not search_block:
+            create_file(filename=filepath)
             append_file(
                 file_name=filepath,
                 content=replace_block,
             )
         else:
+            if search_block == replace_block:
+                return ErrorObservation(
+                    'Search block should not be same as Replace block.'
+                )
             edit_file_by_replace(
                 file_name=filepath,
                 to_replace=search_block,
