@@ -95,7 +95,7 @@ class RuntimeClient:
         for plugin in self.plugins_to_load:
             await plugin.initialize(self.username)
             self.plugins[plugin.name] = plugin
-            logger.info(f'Initializing plugin: {plugin.name}')
+            logger.debug(f'Initializing plugin: {plugin.name}')
 
             if isinstance(plugin, JupyterPlugin):
                 await self.run_ipython(
@@ -111,7 +111,7 @@ class RuntimeClient:
                     code='from openhands.runtime.plugins.agent_skills.agentskills import *\n'
                 )
             )
-            logger.info(f'AgentSkills initialized: {obs}')
+            logger.debug(f'AgentSkills initialized: {obs}')
 
         await self._init_bash_commands()
         logger.info('Runtime client initialized.')
@@ -136,7 +136,7 @@ class RuntimeClient:
         """
 
         # First create the working directory, independent of the user
-        logger.info(f'Client working directory: {self.initial_pwd}')
+        logger.debug(f'Client working directory: {self.initial_pwd}')
         command = f'umask 002; mkdir -p {self.initial_pwd}'
         output = subprocess.run(command, shell=True, capture_output=True)
         out_str = output.stdout.decode()
@@ -237,7 +237,7 @@ class RuntimeClient:
         self.shell.expect(self.__bash_expect_regex)
 
     async def _init_bash_commands(self):
-        logger.info(f'Initializing by running {len(INIT_COMMANDS)} bash commands...')
+        logger.debug(f'Initializing by running {len(INIT_COMMANDS)} bash commands...')
         for command in INIT_COMMANDS:
             action = CmdRunAction(command=command)
             action.timeout = 300
@@ -248,7 +248,7 @@ class RuntimeClient:
             )
             assert obs.exit_code == 0
 
-        logger.info('Bash init commands completed')
+        logger.debug('Bash init commands completed')
 
     def _get_bash_prompt_and_update_pwd(self):
         ps1 = self.shell.after
@@ -753,7 +753,8 @@ if __name__ == '__main__':
             logger.error(f'Error listing files: {e}', exc_info=True)
             return []
 
-    logger.info('Runtime client initialized.')
-
-    logger.info(f'Starting action execution API on port {args.port}')
+    logger.info(
+        f'Runtime client initialized.'
+        f'Starting action execution API on port {args.port}'
+    )
     run(app, host='0.0.0.0', port=args.port)

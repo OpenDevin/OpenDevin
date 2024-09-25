@@ -213,5 +213,5 @@ class AgentSession:
             )
             logger.info(f'Restored agent state from session, sid: {self.sid}')
         except Exception as e:
-            logger.info(f'State could not be restored: {e}')
+            logger.debug(f'State could not be restored: {e}')
         logger.info('Agent controller initialized.')

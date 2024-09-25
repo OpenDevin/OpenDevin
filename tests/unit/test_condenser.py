@@ -40,5 +40,5 @@ def test_condense_logs_error(mock_logger, memory_condenser, mock_llm):
     with pytest.raises(LLMResponseError):
         memory_condenser.condense('Summarize this', mock_llm)
     mock_logger.error.assert_called_once_with(
-        'Error condensing thoughts: %s', 'LLM error', exc_info=False
+        'Error condensing thoughts: LLM error', exc_info=False
     )

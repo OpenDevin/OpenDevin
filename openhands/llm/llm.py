@@ -37,7 +37,7 @@ from openhands.core.exceptions import (
     OperationCancelled,
     UserCancelledError,
 )
-from openhands.core.logger import llm_prompt_logger, llm_response_logger
+from openhands.core.logger import get_llm_loggers
 from openhands.core.logger import openhands_logger as logger
 from openhands.core.message import Message
 from openhands.core.metrics import Metrics
@@ -51,6 +51,8 @@ cache_prompting_supported_models = [
     'claude-3-5-sonnet-20240620',
     'claude-3-haiku-20240307',
 ]
+
+llm_prompt_logger, llm_response_logger = get_llm_loggers().values()
 
 
 class LLM:
@@ -651,7 +653,7 @@ class LLM:
                 input_cost_per_token=self.config.input_cost_per_token,
                 output_cost_per_token=self.config.output_cost_per_token,
             )
-            logger.info(f'Using custom cost per token: {cost_per_token}')
+            logger.debug(f'Using custom cost per token: {cost_per_token}')
             extra_kwargs['custom_cost_per_token'] = cost_per_token
 
         if not self.is_local():

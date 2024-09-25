@@ -21,9 +21,8 @@ def list_foundation_models(
         return ['bedrock/' + model['modelId'] for model in model_summaries]
     except Exception as err:
         logger.warning(
-            '%s. Please config AWS_REGION_NAME AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY'
+            f'{err}. Please config AWS_REGION_NAME AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY'
             ' if you want use bedrock model.',
-            err,
         )
         return []
 

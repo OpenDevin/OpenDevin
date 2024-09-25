@@ -40,7 +40,6 @@ class EvalMetadata(BaseModel):
     def model_dump_json(self, *args, **kwargs):
         dumped = super().model_dump_json(*args, **kwargs)
         dumped_dict = json.loads(dumped)
-        logger.debug(f'Dumped metadata: {dumped_dict}')
         # avoid leaking sensitive information
         dumped_dict['llm_config'] = self.llm_config.to_safe_dict()
         return json.dumps(dumped_dict)

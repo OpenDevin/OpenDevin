@@ -30,14 +30,14 @@ class DockerRuntimeBuilder(RuntimeBuilder):
         previous_layer_count = 0
         for log in build_logs:
             if 'stream' in log:
-                logger.info(log['stream'].strip())
+                logger.debug(log['stream'].strip())
             elif 'error' in log:
                 logger.error(log['error'].strip())
             elif 'status' in log:
                 self._output_build_progress(log, layers, previous_layer_count)
                 previous_layer_count = len(layers)
             else:
-                logger.info(str(log))
+                logger.debug(str(log))
 
         logger.info(f'Image [{target_image_hash_name}] build finished.')
 
@@ -80,14 +80,14 @@ class DockerRuntimeBuilder(RuntimeBuilder):
             return False
 
         try:
-            logger.info(f'Checking, if image exists locally:\n{image_name}')
             self.docker_client.images.get(image_name)
-            logger.info('Image found locally.')
+            logger.info(f'Image found locally:\n{image_name}')
             return True
         except docker.errors.ImageNotFound:
             try:
                 logger.info(
-                    'Image not found locally. Trying to pull it, please wait...'
+                    f'Image not found locally: {image_name}.\n'
+                    'Trying to pull it, please wait...'
                 )
 
                 layers: dict[str, dict[str, str]] = {}
@@ -97,7 +97,7 @@ class DockerRuntimeBuilder(RuntimeBuilder):
                 ):
                     self._output_build_progress(line, layers, previous_layer_count)
                     previous_layer_count = len(layers)
-                logger.info('Image pulled')
+                logger.debug('Image pulled')
                 return True
             except docker.errors.ImageNotFound:
                 logger.info('Could not find image locally or in registry.')

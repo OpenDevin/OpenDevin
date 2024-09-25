@@ -125,12 +125,12 @@ async def run_controller(
     initial_state = None
     if config.enable_cli_session:
         try:
-            logger.info(f'Restoring agent state from cli session {event_stream.sid}')
             initial_state = State.restore_from_session(
                 event_stream.sid, event_stream.file_store
             )
+            logger.debug(f'Restored agent state from cli session {event_stream.sid}')
         except Exception as e:
-            logger.info(f'Error restoring state: {e}')
+            logger.debug(f'Cannot restore state: {e}')
 
     # init controller with this initial state
     controller = AgentController(

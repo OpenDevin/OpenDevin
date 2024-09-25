@@ -150,7 +150,7 @@ class InvariantAnalyzer(SecurityAnalyzer):
             self.event_stream.add_event(new_event, EventSource.AGENT)
 
     async def security_risk(self, event: Action) -> ActionSecurityRisk:
-        logger.info('Calling security_risk on InvariantAnalyzer')
+        logger.debug('Calling security_risk on InvariantAnalyzer')
         new_elements = parse_element(self.trace, event)
         input = [e.model_dump(exclude_none=True) for e in new_elements]  # type: ignore [call-overload]
         self.trace.extend(new_elements)

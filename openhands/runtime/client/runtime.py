@@ -153,9 +153,11 @@ class EventStreamRuntime(Runtime):
                 f'Installing extra user-provided dependencies in the runtime image: {self.config.sandbox.runtime_extra_deps}'
             )
 
-        self.skip_container_logs = (
-            os.environ.get('SKIP_CONTAINER_LOGS', 'false').lower() == 'true'
-        )
+        # container logs can be skipped by setting the SKIP_CONTAINER_LOGS env var to true or 1
+        self.skip_container_logs = os.getenv(
+            'SKIP_CONTAINER_LOGS', 'false'
+        ).lower() in ['true', '1']
+
         if self.runtime_container_image is None:
             if self.base_container_image is None:
                 raise ValueError(
@@ -291,7 +293,7 @@ class EventStreamRuntime(Runtime):
                 volumes=volumes,
             )
             self.log_buffer = LogBuffer(container)
-            logger.info(f'Container started. Server url: {self.api_url}')
+            logger.debug(f'Container started. Server url: {self.api_url}')
             self.send_status_message('STATUS$CONTAINER_STARTED')
             return container
         except Exception as e:
@@ -508,7 +510,7 @@ class EventStreamRuntime(Runtime):
         finally:
             if recursive:
                 os.unlink(temp_zip_path)
-            logger.info(f'Copy completed: host:{host_src} -> runtime:{sandbox_dest}')
+            logger.debug(f'Copy completed: host:{host_src} -> runtime:{sandbox_dest}')
             self._refresh_logs()
 
     def list_files(self, path: str | None = None) -> list[str]:

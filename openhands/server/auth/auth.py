@@ -26,7 +26,7 @@ def get_sid_from_token(token: str, jwt_secret: str) -> str:
     except InvalidTokenError:
         logger.error('Invalid token')
     except Exception as e:
-        logger.exception('Unexpected error decoding token: %s', e)
+        logger.exception(f'Unexpected error decoding token: {e}')
     return ''
 
 

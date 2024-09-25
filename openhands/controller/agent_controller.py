@@ -355,7 +355,7 @@ class AgentController:
             # global metrics should be shared between parent and child
             metrics=self.state.metrics,
         )
-        logger.info(
+        logger.debug(
             f'[Agent Controller {self.id}]: start delegate, creating agent {delegate_agent.name} using LLM {llm}'
         )
         self.delegate = AgentController(
@@ -384,16 +384,15 @@ class AgentController:
 
         if self.delegate is not None:
             assert self.delegate != self
-            if self.delegate.get_agent_state() == AgentState.PAUSED:
-                await asyncio.sleep(1)
-            else:
-                await self._delegate_step()
             return
 
-        logger.info(
-            f'{self.agent.name} LEVEL {self.state.delegate_level} LOCAL STEP {self.state.local_iteration} GLOBAL STEP {self.state.iteration}',
-            extra={'msg_type': 'STEP'},
-        )
+        if self.state.delegate_level == 0:
+            logger.info(f'{self.agent.name} STEP {self.state.iteration}')
+        else:
+            logger.info(
+                f'{self.agent.name} LEVEL {self.state.delegate_level} LOCAL STEP {self.state.local_iteration} GLOBAL STEP {self.state.iteration}',
+                extra={'msg_type': 'STEP'},
+            )
 
         # check if agent hit the resources limit
         stop_step = False
@@ -447,12 +446,13 @@ class AgentController:
 
     async def _delegate_step(self):
         """Executes a single step of the delegate agent."""
-        logger.debug(f'[Agent Controller {self.id}] Delegate not none, awaiting...')
         await self.delegate._step()  # type: ignore[union-attr]
-        logger.debug(f'[Agent Controller {self.id}] Delegate step done')
+
+        # when the delegate step is done, check its state
         assert self.delegate is not None
         delegate_state = self.delegate.get_agent_state()
-        logger.debug(f'[Agent Controller {self.id}] Delegate state: {delegate_state}')
+
+        # clean up if the delegate has finished, normally or abnormally
         if delegate_state == AgentState.ERROR:
             # update iteration that shall be shared across agents
             self.state.iteration = self.delegate.state.iteration
@@ -464,7 +464,7 @@ class AgentController:
 
             await self.report_error('Delegator agent encountered an error')
         elif delegate_state in (AgentState.FINISHED, AgentState.REJECTED):
-            logger.info(
+            logger.debug(
                 f'[Agent Controller {self.id}] Delegate agent has finished execution'
             )
             # retrieve delegate result
@@ -506,7 +506,9 @@ class AgentController:
         """
         stop_step = False
         if self.state.traffic_control_state == TrafficControlState.PAUSED:
-            logger.info('Hitting traffic control, temporarily resume upon user request')
+            logger.debug(
+                'Hitting traffic control, temporarily resume upon user request'
+            )
             self.state.traffic_control_state = TrafficControlState.NORMAL
         else:
             self.state.traffic_control_state = TrafficControlState.THROTTLING

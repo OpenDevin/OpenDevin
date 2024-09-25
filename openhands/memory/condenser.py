@@ -18,7 +18,7 @@ class MemoryCondenser:
             summary_response = resp['choices'][0]['message']['content']
             return summary_response
         except Exception as e:
-            logger.error('Error condensing thoughts: %s', str(e), exc_info=False)
+            logger.error(f'Error condensing thoughts: {e}', exc_info=False)
 
             # TODO If the llm fails with ContextWindowExceededError, we can try to condense the memory chunk by chunk
             raise

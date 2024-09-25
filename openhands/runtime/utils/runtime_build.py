@@ -43,7 +43,7 @@ def _put_source_code_to_dir(temp_dir: str):
         raise RuntimeError(f'Temp directory {temp_dir} does not exist')
 
     project_root = os.path.dirname(os.path.dirname(os.path.abspath(openhands.__file__)))
-    logger.info(f'Building source distribution using project root: {project_root}')
+    logger.debug(f'Building source distribution using project root: {project_root}')
 
     # Fetch the correct version from pyproject.toml
     package_version = _get_package_version()
@@ -60,7 +60,7 @@ def _put_source_code_to_dir(temp_dir: str):
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
-    logger.info(result.stdout.decode())
+    logger.debug(result.stdout.decode())
     err_logs = result.stderr.decode()
     if err_logs:
         logger.error(err_logs)
@@ -72,7 +72,7 @@ def _put_source_code_to_dir(temp_dir: str):
     if not os.path.exists(tarball_path):
         logger.error(f'Source distribution not found at {tarball_path}')
         raise RuntimeError(f'Source distribution not found at {tarball_path}')
-    logger.info(f'Source distribution created at {tarball_path}')
+    logger.debug(f'Source distribution created at {tarball_path}')
 
     # Unzip the tarball
     shutil.unpack_archive(tarball_path, temp_dir)
@@ -83,7 +83,7 @@ def _put_source_code_to_dir(temp_dir: str):
         os.path.join(temp_dir, f'openhands_ai-{package_version}'),
         os.path.join(temp_dir, 'code'),
     )
-    logger.info(f'Unpacked source code directory: {os.path.join(temp_dir, "code")}')
+    logger.debug(f'Unpacked source code directory: {os.path.join(temp_dir, "code")}')
 
 
 def _generate_dockerfile(
@@ -142,7 +142,9 @@ def prep_docker_build_folder(
         skip_init=skip_init,
         extra_deps=extra_deps,
     )
-    if os.getenv('SKIP_CONTAINER_LOGS', 'false') != 'true':
+
+    # Write or skip container logs
+    if os.getenv('SKIP_CONTAINER_LOGS', 'false').lower() not in ['true', '1']:
         logger.debug(
             (
                 f'===== Dockerfile content start =====\n'
@@ -155,7 +157,7 @@ def prep_docker_build_folder(
 
     # Get the MD5 hash of the dir_path directory
     dist_hash = dirhash(dir_path, 'md5')
-    logger.info(
+    logger.debug(
         f'Input base image: {base_image}\n'
         f'Skip init: {skip_init}\n'
         f'Extra deps: {extra_deps}\n'
@@ -451,7 +453,7 @@ if __name__ == '__main__':
     else:
         # If a build_folder is not provided, after copying the required source code and dynamically creating the
         # Dockerfile, we actually build the Docker image
-        logger.info('Building image in a temporary folder')
+        logger.debug('Building image in a temporary folder')
         docker_builder = DockerRuntimeBuilder(docker.from_env())
         image_name = build_runtime_image(args.base_image, docker_builder)
         print(f'\nBUILT Image: {image_name}\n')

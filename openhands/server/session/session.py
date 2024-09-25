@@ -65,10 +65,10 @@ class Session:
                 await self.dispatch(data)
         except WebSocketDisconnect:
             await self.close()
-            logger.info('WebSocket disconnected, sid: %s', self.sid)
+            logger.info(f'WebSocket disconnected, sid: {self.sid}')
         except RuntimeError as e:
             await self.close()
-            logger.exception('Error in loop_recv: %s', e)
+            logger.exception(f'Error in loop_recv: {e}')
 
     async def _initialize_agent(self, data: dict):
         self.agent_session.event_stream.add_event(

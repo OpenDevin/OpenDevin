@@ -108,7 +108,7 @@ class Task:
             TaskInvalidStateError: If the provided state is invalid.
         """
         if state not in STATES:
-            logger.error('Invalid state: %s', state)
+            logger.error(f'Invalid state: {state}')
             raise TaskInvalidStateError(state)
         self.state = state
         if (
