@@ -1,0 +1,10 @@
+```json
+{
+  "action": "finish",
+  "args": {
+    "outputs": {
+      "completed": true
+    }
+  }
+}
+```

@@ -160,6 +160,20 @@ files = [
 frozenlist = ">=1.1.0"
 
 [[package]]
+name = "aiostream"
+version = "0.5.2"
+description = "Generator-based operators for asynchronous iteration"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "aiostream-0.5.2-py3-none-any.whl", hash = "sha256:054660370be9d37f6fe3ece3851009240416bd082e469fd90cc8673d3818cf71"},
+    {file = "aiostream-0.5.2.tar.gz", hash = "sha256:b71b519a2d66c38f0872403ab86417955b77352f08d9ad02ad46fc3926b389f4"},
+]
+
+[package.dependencies]
+typing-extensions = "*"
+
+[[package]]
 name = "altair"
 version = "5.4.0"
 description = "Vega-Altair: A declarative statistical visualization library for Python."
@@ -2695,6 +2709,23 @@ grpcio = ">=1.62.3"
 protobuf = ">=4.21.6"
 
 [[package]]
+name = "grpclib"
+version = "0.4.7"
+description = "Pure-Python gRPC implementation for asyncio"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "grpclib-0.4.7.tar.gz", hash = "sha256:2988ef57c02b22b7a2e8e961792c41ccf97efc2ace91ae7a5b0de03c363823c3"},
+]
+
+[package.dependencies]
+h2 = ">=3.1.0,<5"
+multidict = "*"
+
+[package.extras]
+protobuf = ["protobuf (>=3.20.0)"]
+
+[[package]]
 name = "gymnasium"
 version = "0.29.1"
 description = "A standard API for reinforcement learning and a diverse set of reference environments (formerly Gym)."
@@ -2733,6 +2764,32 @@ python-versions = ">=3.7"
 files = [
     {file = "h11-0.14.0-py3-none-any.whl", hash = "sha256:e3fe4ac4b851c468cc8363d500db52c2ead036020723024a109d37346efaa761"},
     {file = "h11-0.14.0.tar.gz", hash = "sha256:8f19fbbe99e72420ff35c00b27a34cb9937e902a8b810e2c88300c6f0a3b699d"},
+]
+
+[[package]]
+name = "h2"
+version = "4.1.0"
+description = "HTTP/2 State-Machine based protocol implementation"
+optional = false
+python-versions = ">=3.6.1"
+files = [
+    {file = "h2-4.1.0-py3-none-any.whl", hash = "sha256:03a46bcf682256c95b5fd9e9a99c1323584c3eec6440d379b9903d709476bc6d"},
+    {file = "h2-4.1.0.tar.gz", hash = "sha256:a83aca08fbe7aacb79fec788c9c0bac936343560ed9ec18b82a13a12c28d2abb"},
+]
+
+[package.dependencies]
+hpack = ">=4.0,<5"
+hyperframe = ">=6.0,<7"
+
+[[package]]
+name = "hpack"
+version = "4.0.0"
+description = "Pure-Python HPACK header compression"
+optional = false
+python-versions = ">=3.6.1"
+files = [
+    {file = "hpack-4.0.0-py3-none-any.whl", hash = "sha256:84a076fad3dc9a9f8063ccb8041ef100867b1878b25ef0ee63847a5d53818a6c"},
+    {file = "hpack-4.0.0.tar.gz", hash = "sha256:fc41de0c63e687ebffde81187a948221294896f6bdc0ae2312708df339430095"},
 ]
 
 [[package]]
@@ -2901,6 +2958,17 @@ files = [
 
 [package.dependencies]
 pyreadline3 = {version = "*", markers = "sys_platform == \"win32\" and python_version >= \"3.8\""}
+
+[[package]]
+name = "hyperframe"
+version = "6.0.1"
+description = "HTTP/2 framing layer for Python"
+optional = false
+python-versions = ">=3.6.1"
+files = [
+    {file = "hyperframe-6.0.1-py3-none-any.whl", hash = "sha256:0ec6bafd80d8ad2195c4f03aacba3a8265e57bc4cff261e802bf39970ed02a15"},
+    {file = "hyperframe-6.0.1.tar.gz", hash = "sha256:ae510046231dc8e9ecb1a6586f63d2347bf4c8905914aa84ba585ae85f28a914"},
+]
 
 [[package]]
 name = "identify"
@@ -4657,6 +4725,33 @@ files = [
 
 [package.extras]
 test = ["mypy (>=1.0)", "pytest (>=7.0.0)"]
+
+[[package]]
+name = "modal"
+version = "0.64.155"
+description = "Python client library for Modal"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "modal-0.64.155-py3-none-any.whl", hash = "sha256:8f86ccab503872bbc74a1f383fd86dcdca81dc673b10c4985dc75cad7cfd6f2b"},
+]
+
+[package.dependencies]
+aiohttp = "*"
+aiostream = ">=0.5.2,<0.6.0"
+certifi = "*"
+click = ">=8.1.0"
+fastapi = "*"
+grpclib = "0.4.7"
+protobuf = ">=3.19,<4.24.0 || >4.24.0,<5.0"
+rich = ">=12.0.0"
+synchronicity = ">=0.7.7,<0.8.0"
+toml = "*"
+typer = ">=0.9"
+types-certifi = "*"
+types-toml = "*"
+typing-extensions = ">=4.6,<5.0"
+watchfiles = "*"
 
 [[package]]
 name = "monotonic"
@@ -7844,6 +7939,24 @@ files = [
 ]
 
 [[package]]
+name = "sigtools"
+version = "4.0.1"
+description = "Utilities for working with inspect.Signature objects."
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "sigtools-4.0.1-py2.py3-none-any.whl", hash = "sha256:d216b4cf920bbab0fce636ddc429ed8463a5b533d9e1492acb45a2a1bc36ac6c"},
+    {file = "sigtools-4.0.1.tar.gz", hash = "sha256:4b8e135a9cd4d2ea00da670c093372d74e672ba3abb87f4c98d8e73dea54445c"},
+]
+
+[package.dependencies]
+attrs = "*"
+
+[package.extras]
+test = ["coverage", "mock", "repeated-test (>=2.2.1)", "sphinx"]
+tests = ["coverage", "mock", "repeated-test (>=2.2.1)", "sphinx"]
+
+[[package]]
 name = "six"
 version = "1.16.0"
 description = "Python 2 and 3 compatibility utilities"
@@ -8104,6 +8217,20 @@ mpmath = ">=1.1.0,<1.4"
 
 [package.extras]
 dev = ["hypothesis (>=6.70.0)", "pytest (>=7.1.0)"]
+
+[[package]]
+name = "synchronicity"
+version = "0.7.7"
+description = "Export blocking and async library versions from a single async implementation"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "synchronicity-0.7.7-py3-none-any.whl", hash = "sha256:916294c8e417395b181dd190a6c7725de2d387d9089db6d8d850349daf3ab9a2"},
+]
+
+[package.dependencies]
+sigtools = "4.0.1"
+typing-extensions = ">=4.6"
 
 [[package]]
 name = "tenacity"
@@ -8738,6 +8865,17 @@ click = ">=8.0.0"
 rich = ">=10.11.0"
 shellingham = ">=1.3.0"
 typing-extensions = ">=3.7.4.3"
+
+[[package]]
+name = "types-certifi"
+version = "2021.10.8.3"
+description = "Typing stubs for certifi"
+optional = false
+python-versions = "*"
+files = [
+    {file = "types-certifi-2021.10.8.3.tar.gz", hash = "sha256:72cf7798d165bc0b76e1c10dd1ea3097c7063c42c21d664523b928e88b554a4f"},
+    {file = "types_certifi-2021.10.8.3-py3-none-any.whl", hash = "sha256:b2d1e325e69f71f7c78e5943d410e650b4707bb0ef32e4ddf3da37f54176e88a"},
+]
 
 [[package]]
 name = "types-python-dateutil"

@@ -1,0 +1,8 @@
+```json
+{
+  "action": "read",
+  "args": {
+    "path": "hello.sh"
+  }
+}
+```

@@ -1,0 +1,8 @@
+```json
+{
+  "action": "run",
+  "args": {
+    "command": "./hello.sh"
+  }
+}
+```

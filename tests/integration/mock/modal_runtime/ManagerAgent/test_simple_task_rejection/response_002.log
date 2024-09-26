@@ -1,0 +1,6 @@
+{
+  "action": "run",
+  "args": {
+    "command": "git status"
+  }
+}

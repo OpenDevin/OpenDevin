@@ -1,0 +1,19 @@
+{
+  "action": "finish",
+  "args": {
+    "outputs": {
+      "summary": {
+        "bad.txt": {
+          "original": [
+            "typoo",
+            "mor"
+          ],
+          "corrected": [
+            "typo",
+            "more"
+          ]
+        }
+      }
+    }
+  }
+}

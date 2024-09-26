@@ -1,0 +1,10 @@
+```json
+{
+  "action": "modify_task",
+  "args": {
+    "task_id": "0.1",
+    "state": "in_progress",
+    "thought": "Start writing the content to print 'hello' in the shell script."
+  }
+}
+```

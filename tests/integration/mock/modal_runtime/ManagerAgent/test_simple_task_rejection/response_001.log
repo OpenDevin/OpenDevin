@@ -1,0 +1,9 @@
+```json
+{
+  "action": "delegate",
+  "args": {
+    "agent": "CommitWriterAgent",
+    "inputs": {}
+  }
+}
+```

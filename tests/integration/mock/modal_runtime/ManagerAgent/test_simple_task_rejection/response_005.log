@@ -1,0 +1,10 @@
+```json
+{
+  "action": "reject",
+  "args": {
+    "outputs": {
+      "reason": "CommitWriterAgent was unable to write a commit message because it is not a valid git repository or there is no diff in the staging area."
+    }
+  }
+}
+```

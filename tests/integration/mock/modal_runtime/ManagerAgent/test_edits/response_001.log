@@ -1,0 +1,11 @@
+```json
+{
+  "action": "delegate",
+  "args": {
+    "agent": "TypoFixerAgent",
+    "inputs": {
+      "task": "Fix typos in bad.txt"
+    }
+  }
+}
+```

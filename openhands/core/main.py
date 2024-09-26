@@ -1,6 +1,8 @@
 import asyncio
 import hashlib
+import os
 import sys
+import time
 import uuid
 from typing import Callable, Protocol, Type
 
@@ -19,8 +21,11 @@ from openhands.core.schema import AgentState
 from openhands.events import EventSource, EventStream, EventStreamSubscriber
 from openhands.events.action import MessageAction
 from openhands.events.action.action import Action
+from openhands.events.action.commands import CmdRunAction
+from openhands.events.action.files import FileReadAction
 from openhands.events.event import Event
 from openhands.events.observation import AgentStateChangedObservation
+from openhands.events.observation.error import ErrorObservation
 from openhands.llm.llm import LLM
 from openhands.runtime import get_runtime_cls
 from openhands.runtime.runtime import Runtime
@@ -153,6 +158,34 @@ async def run_controller(
         f'{agent.llm.config.model}, with task: "{task_str}"'
     )
 
+    # Copy files from workspace_base to workspace_mount_in_sandbox
+    if config.workspace_base and hasattr(runtime, 'copy_to'):
+        source_dir = config.workspace_base
+        dest_dir = config.workspace_mount_path_in_sandbox
+        for item in os.listdir(source_dir):
+            s = os.path.join(source_dir, item)
+            if os.path.isdir(s):
+                runtime.copy_to(s, dest_dir, recursive=True)
+            else:
+                runtime.copy_to(s, dest_dir)
+        logger.info(
+            f'Copied contents from {config.workspace_base} to sandbox workspace'
+        )
+
+    # If we're doing the browsing test, we need to start a http server in
+    # the container
+    if 'Browse' in task_str:
+        logger.info('Starting http server')
+        ret = runtime.run(
+            CmdRunAction(
+                command='cd /openhands/code && /openhands/miniforge3/bin/mamba run --no-capture-output -n base poetry run python -m openhands.testutils.start_http_server & cd -',
+            )
+        )
+        if isinstance(ret, ErrorObservation):
+            raise Exception(f'Failed to start http server: {ret.message}')
+        # Wait for the server to start
+        time.sleep(1)
+
     # start event is a MessageAction with the task, either resumed or new
     if config.enable_cli_session and initial_state is not None:
         # we're resuming the previous session
@@ -190,6 +223,27 @@ async def run_controller(
         AgentState.STOPPED,
     ]:
         await asyncio.sleep(1)  # Give back control for a tick, so the agent can run
+
+    # List files in the sandbox workspace
+    # TODO(pawalt): make this recursive
+    files = runtime.list_files(config.workspace_mount_path_in_sandbox)
+
+    # Read contents of each file and write to workspace_base
+    for file in files:
+        sandbox_file_path = os.path.join(config.workspace_mount_path_in_sandbox, file)
+        read_action = FileReadAction(path=sandbox_file_path)
+        observation = runtime.read(read_action)
+
+        if isinstance(observation, ErrorObservation):
+            logger.error(f'Failed to read file {file}: {observation.message}')
+        else:
+            logger.info(f'Contents of {file}:')
+            logger.info(observation.content)
+
+            # Write the content to the file in workspace_base
+            workspace_file_path = os.path.join(config.workspace_base, file)
+            with open(workspace_file_path, 'w') as f:
+                f.write(observation.content)
 
     # save session when we're about to close
     if config.enable_cli_session:
