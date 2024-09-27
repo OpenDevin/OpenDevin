@@ -256,7 +256,6 @@ def process_instance(
 if __name__ == '__main__':
     args = parse_arguments()
     dataset = load_dataset('RajMaheshwari/Exercism-Python')
-    dataset = dataset.shuffle(seed=42)
     aider_bench_tests = dataset['train'].to_pandas()
 
     llm_config = None
