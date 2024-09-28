@@ -38,6 +38,6 @@ class BrowserOutputObservation(Observation):
             f'Last browser action: {self.last_browser_action}\n'
             f'Last browser action error: {self.last_browser_action_error}\n'
             f'Focused element bid: {self.focused_element_bid}\n'
-            f'axTree: {self.axtree_object}\n'
-            f'CONTENT: {self.content}\n'
+            # f'axTree: {self.axtree_object}\n' # too long
+            f'CONTENT: {self.content if len(self.content) < 1000 else self.content[:1000]}\n'
         )

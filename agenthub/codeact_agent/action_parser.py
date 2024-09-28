@@ -74,7 +74,7 @@ class CodeActActionParserFinish(ActionParser):
             self.finish_command is not None
         ), 'self.finish_command should not be None when parse is called'
         thought = action_str.replace(self.finish_command.group(0), '').strip()
-        return AgentFinishAction(thought=thought)
+        return AgentFinishAction(thought=thought, outputs={'content': thought})
 
 
 class CodeActActionParserCmdRun(ActionParser):

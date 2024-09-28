@@ -1,0 +1,181 @@
+{% set DEFAULT_EXAMPLE %}
+--- START OF EXAMPLE 1 ---
+
+USER: I want to go to the user 'Every-Hands-AI' github profile using browser and check how many repos they have, then write the number to the new 'repo_count.txt' file. Use a plan that has the least number of steps.
+
+ASSISTANT:
+I have enough information, let's create a plan to achieve the task:
+<execute_global_plan>
+# Phases
+## Phase 1
+- reason: As the first step, we need to identify the number of repositories in the user's GitHub profile.
+- description: Browse the GitHub profile of the user 'Every-Hands-AI' to find the number of repositories.
+- expected_state: The number of repositories is identified.
+## Phase 2
+- reason: The number of repositories should be stored in a file as requested by the user.
+- description: Create a new file `repo_count.txt` and write the number of repositories to it.
+- expected_state: The file `repo_count.txt` is created and contains the number of repositories.
+</execute_global_plan>
+
+USER:
+OBSERVATION:
+LocalExecutorAgent finishes task with content: The GitHub profile 'Every-Hands-AI' does not exist or is not accessible. Please provide a new global plan with a valid GitHub username or an alternative task.
+
+ASSISTANT:
+It seems the GitHub profile 'Every-Hands-AI' does not exist or is not accessible. Please provide a valid GitHub username or an alternative task.
+
+USER:
+Sorry, the correct github handle is "All-Hands-AI".
+
+ASSISTANT:
+Let's create a new plan to achieve the task:
+<execute_global_plan>
+# Phases
+## Phase 1
+- reason: As the first step, we need to identify the number of repositories in the user's GitHub profile.
+- description: Browse the GitHub profile of the user 'All-Hands-AI' to find the number of repositories.
+- expected_state: The number of repositories is identified.
+## Phase 2
+- reason: The number of repositories should be stored in a file as requested by the user.
+- description: Create a new file `repo_count.txt` and write the number of repositories to it.
+- expected_state: The file `repo_count.txt` is created and contains the number of repositories.
+</execute_global_plan>
+
+USER:
+OBSERVATION:
+LocalExecutorAgent finishes task with content: The file repo_count.txt has been successfully updated with the number of repositories. The tasks are now complete.
+Summary:
+- Browsed the GitHub profile of the user 'All-Hands-AI' and found that the number of repositories is 2.
+- Appended the number of repositories to the file repo_count.txt.
+
+ASSISTANT:
+The tasks have been successfully completed. The file repo_count.txt has been created and updated with the number of repositories (2) for the user 'All-Hands-AI'.
+If you have any further requests, feel free to ask. Otherwise, I will consider the task complete.
+<finish></finish>
+
+--- END OF EXAMPLE 1 ---
+
+--- START OF EXAMPLE 2 ---
+
+USER: Create a list of numbers from 1 to 10, and display them in a web page at port 5000. There's an existing Python file `app.py` that you can use.
+
+ASSISTANT: Let's check the existing Python file `app.py`:
+<execute_ipython>
+open_file('app.py')
+</execute_ipython>
+
+USER:
+OBSERVATION:
+[File: /workspace/app.py (8 lines total)]
+(this is the beginning of the file)
+1|from flask import Flask
+2|app = Flask(__name__)
+3|
+4|@app.route('/')
+5|def index():
+6|    numbers = list(range(1, 11))
+7|    return str(numbers)
+8|
+(this is the end of the file)
+
+ASSISTANT:
+Great! Seems like the existing Python file `app.py` is ready to display a list of numbers from 1 to 10, but it's missing the code to start the web server. Let me create a plan to achieve the task:
+<execute_global_plan>
+# Phases
+## Phase 1
+- reason: The existing Python file is missing the code to start the web server. Normally, the server is started using the `app.run(port=5000)` command. This phase will add this necessary code in a __main__ block to start the server. You can use the `insert_content_at_line` function or other appropriate ways to add the code.
+- description: Edit the existing Python file `app.py` to insert the code for starting a web server, at the end of the file.
+- expected_state: The Python file `app.py` is updated with the code to start the web server.
+<file_path> /workspace/app.py </file_path>
+<expected_content>
+8|
+9|if __name__ == '__main__':
+10|    app.run(port=5000)
+</expected_content>
+## Phase 2
+- reason: After updating the Python file, we need to run it to display the list of numbers on a web page. The command a shell command can be: `python3 app.py`.
+- description: Run the Python file `app.py` to display the list of numbers on a web page at port 5000.
+- expected_state: The list of numbers is displayed on a web page at port 5000.
+</execute_global_plan>
+
+USER:
+OBSERVATION:
+LocalExecutorAgent finishes task with content: The server is running on port 5000 with PID 124. You can access the list of numbers by visiting http://127.0.0.1:5000. The tasks are now complete.
+Summary:
+- Edited the existing Python file `app.py` to insert the code for starting a web server.
+- Ran the Python file to display the list of numbers on a web page at port 5000.
+
+ASSISTANT:
+The server is running on port 5000 with PID 124. You can access the list of numbers by visiting http://127.0.0.1:5000. If you have any further questions, feel free to ask!
+
+USER: Now browse the newly started server's homepage and show me the content.
+
+ASSISTANT:
+Sure, let me create a plan to achieve the task:
+<execute_global_plan>
+# Phases
+## Phase 1
+- reason: To verify that the server is running and displaying the list of numbers correctly, we need to browse the server's homepage. We can use the `execute_browse` function to access the URL.
+- description: Browse the server's homepage at http://127.0.0.1:5000
+- expected_state: The content of the server's homepage is retrieved.
+</execute_global_plan>
+
+USER:
+OBSERVATION:
+LocalExecutorAgent finishes task with content: The content of the server's homepage is "[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]". The tasks are now complete.
+Summary:
+- Browsed the server's homepage at http://127.0.0.1:5000 and retrieved the content "[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]".
+
+ASSISTANT:
+The content of the server's homepage is "[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]". If you have any further questions, feel free to ask!
+
+USER: Now kill the server, make it display the numbers in a table format.
+
+ASSISTANT:
+Sure! Let me create a plan to achieve the task:
+<execute_global_plan>
+# Phases
+## Phase 1
+- reason: The server needs to be stopped before modifying the Python code.
+- description: Stop the server running on port 5000.
+- expected_state: The server is stopped.
+## Phase 2
+- reason: The current code returns the numbers as a string, which is incorrect. We need to modify it, starting at line 6, to display the numbers in a table format by using HTML tags for table rows and cells.
+- description: Modify the Python code to display the numbers in a table format.
+- expected_state: The Python code is updated to display the numbers in a table format.
+<file_path> /workspace/app.py </file_path>
+<expected_content>
+6|    numbers = list(range(1, 11))
+7|    return "<table>" + "".join([f"<tr><td>{num}</td></tr>" for num in numbers]) + "</table>"
+</expected_content>
+## Phase 3
+- reason: After modifying the Python code, we need to run the file again to display the numbers in the expected table format.
+- description: Run the Python file again to display the numbers in a table format on the web page at port 5000.
+- expected_state: The numbers are displayed in a table format on the web page.
+</execute_global_plan>
+
+USER:
+OBSERVATION:
+LocalExecutorAgent finishes task with content: The server is running on port 5000 with PID 126. You can access the list of numbers in a table format by visiting http://127.0.0.1:5000. The tasks are now complete.
+Summary:
+- Stopped the server running on port 5000.
+- Modified the Python code to display the numbers in a table format.
+- Ran the Python file again to display the numbers in a table format on the web page at port 5000.
+
+ASSISTANT:
+The server is running on port 5000 with PID 126. You can access the list of numbers in a table format by visiting http://127.0.0.1:5000. Let me know if you have any further requests!
+<finish></finish>
+
+--- END OF EXAMPLE 2 ---
+{% endset %}
+Here is an example of how you can interact with the environment for task solving:
+{{ DEFAULT_EXAMPLE }}
+{% if micro_agent %}
+--- BEGIN OF GUIDELINE ---
+The following information may assist you in completing your task:
+
+{{ micro_agent }}
+--- END OF GUIDELINE ---
+{% endif %}
+
+NOW, LET'S START!

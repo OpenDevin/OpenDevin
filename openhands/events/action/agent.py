@@ -74,7 +74,8 @@ class AgentDelegateAction(Action):
     inputs: dict
     thought: str = ''
     action: str = ActionType.DELEGATE
+    action_suffix: str = 'browse'
 
     @property
     def message(self) -> str:
-        return f"I'm asking {self.agent} for help with this task."
+        return f"The task to delegate is: {self.inputs['task']}. I'm asking {self.agent} for help with this task."
