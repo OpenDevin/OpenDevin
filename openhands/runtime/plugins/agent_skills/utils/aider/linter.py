@@ -76,7 +76,7 @@ class Linter:
         cmd = ' '.join(cmd)
         res = ''
         res += errors
-        line_num = extract_error_line_from(res)
+        line_num = Linter.extract_first_error_line_from(res)
         return LintResult(text=res, lines=[line_num])
 
     def get_abs_fname(self, fname):
@@ -259,6 +259,108 @@ class Linter:
         # If tsc is not available return None (basic_lint causes other problems!)
         return None
 
+    @staticmethod
+    def extract_error_line_from(line):
+        # TODO: this is a temporary fix to extract the error line from the error message
+        # it should be replaced with a more robust/unified solution
+        # eslint, for example, doesn't follow the same format
+        if line.strip():
+            # The format of the error message is: <filename>:<line>:<column>: <error code> <error message>
+            parts = line.split(':')
+            if len(parts) >= 2:
+                try:
+                    return int(parts[1])
+                except ValueError:
+                    pass
+        return None
+
+    @staticmethod
+    def extract_first_error_line_from(lint_error):
+        for line in lint_error.splitlines(True):
+            error_lineno = Linter.extract_error_line_from(line)
+            if error_lineno is not None:
+                return error_lineno
+        return None
+
+    @staticmethod
+    def extract_error_lines_from(lint_error):
+        lines = []
+        for line in lint_error.splitlines(True):
+            error_lineno = Linter.extract_error_line_from(line)
+            if error_lineno is not None:
+                lines.append(error_lineno)
+        return lines
+
+    @staticmethod
+    def refine_lint_error(
+        original_lint_error: str,
+        lint_error: str,
+        is_append: bool,
+        is_insert: bool,
+        lines: list,
+        start: int,
+        end: int,
+        n_added_lines: int,
+    ):
+        """
+        Given original_lint_error (pre-edit-lint) and lint_error (post-edit-lint),
+        select only new linting errors that are caused by the edit
+        """
+        original_error_lines = set(Linter.extract_error_lines_from(original_lint_error))
+        new_lint_errors = []
+        first_error_lineno = None
+
+        # due to the edit, the old line numbers and new line numbers may not match
+        # for every lint error, check if it is caused by modification
+        for line in lint_error.splitlines():
+            lineno = Linter.extract_error_line_from(line)
+            if lineno is None:
+                continue
+            elif is_append:
+                # append: only retain errors from appendication chunk, since
+                # an appendication never causes new errors in other places
+                if lineno > len(lines):
+                    new_lint_errors.append(line)
+                else:
+                    continue
+            elif is_insert:
+                # insert: similar to append, only retain errors from insertion
+                # chunk, since an insertion never causes new errors in other places,
+                # except the line right below the insertion
+                if lineno >= start and lineno <= start + n_added_lines:
+                    new_lint_errors.append(line)
+                else:
+                    continue
+            else:
+                # edit:
+                if lineno >= start and lineno <= start + n_added_lines:
+                    # error coming from edit part itself
+                    new_lint_errors.append(line)
+                elif lineno < start and lineno not in original_error_lines:
+                    # error coming before edit part, and is new, meaning the
+                    # error is caused by the edit - e.g. edit changes a
+                    # function signature and breaks existing code
+                    new_lint_errors.append(line)
+                elif (
+                    lineno > start + n_added_lines
+                    and (lineno - n_added_lines + end - start + 1)
+                    not in original_error_lines
+                ):
+                    # error coming after edit part, and is new, meaning the
+                    # error is caused by the edit - e.g. edit changes a
+                    # function signature and breaks existing code
+                    new_lint_errors.append(line)
+                else:
+                    continue
+
+            if first_error_lineno is None:
+                first_error_lineno = lineno
+
+        if len(new_lint_errors) == 0:
+            return None, None
+        else:
+            return '\n'.join(new_lint_errors), first_error_lineno
+
 
 def lint_python_compile(fname, code):
     try:
@@ -305,23 +407,6 @@ def basic_lint(fname, code):
     return LintResult(
         text='\n'.join(error_messages), lines=[line for line, _, _ in errors]
     )
-
-
-def extract_error_line_from(lint_error):
-    # TODO: this is a temporary fix to extract the error line from the error message
-    # it should be replaced with a more robust/unified solution
-    first_error_line = None
-    for line in lint_error.splitlines(True):
-        if line.strip():
-            # The format of the error message is: <filename>:<line>:<column>: <error code> <error message>
-            parts = line.split(':')
-            if len(parts) >= 2:
-                try:
-                    first_error_line = int(parts[1])
-                    break
-                except ValueError:
-                    continue
-    return first_error_line
 
 
 def tree_context(fname, code, line_nums):

@@ -33,7 +33,7 @@ WINDOW = 100
 
 # This is also used in unit tests!
 MSG_FILE_UPDATED = '[File updated (edited at line {line_number}). Please review the changes and make sure they are correct (correct indentation, no duplicate lines, etc). Edit the file again if necessary.]'
-LINTER_ERROR_MSG = '[Your proposed edit has introduced new syntax error(s). Please understand the errors and retry your edit command.]\n'
+LINTER_ERROR_MSG = '[Your proposed edit has introduced new syntax error(s). Please understand the errors and retry your edit command.]\nERRORS:\n'
 
 
 # ==================================================================================================
@@ -104,7 +104,7 @@ def _lint_file(file_path: str) -> tuple[str | None, int | None]:
         # Linting successful. No issues found.
         return None, None
     first_error_line = lint_error.lines[0] if lint_error.lines else None
-    return 'ERRORS:\n' + lint_error.text, first_error_line
+    return lint_error.text, first_error_line
 
 
 def _print_window(
@@ -462,7 +462,8 @@ def _edit_file_impl(
     try:
         n_added_lines = None
 
-        # lint the original file
+        # NOTE: we need to get env var inside this function
+        # because the env var will be set AFTER the agentskills is imported
         enable_auto_lint = os.getenv('ENABLE_AUTO_LINT', 'false').lower() == 'true'
         if enable_auto_lint:
             # Copy the original file to a temporary file (with the same ext) and lint it
@@ -507,8 +508,6 @@ def _edit_file_impl(
         os.replace(temp_file_path, file_name)
 
         # Handle linting
-        # NOTE: we need to get env var inside this function
-        # because the env var will be set AFTER the agentskills is imported
         if enable_auto_lint:
             # Generate a random temporary file path
             suffix = os.path.splitext(file_name)[1]
@@ -520,33 +519,17 @@ def _edit_file_impl(
 
             lint_error, first_error_line = _lint_file(file_name)
 
-            # Select the errors caused by the modification
-            def extract_last_part(line):
-                parts = line.split(':')
-                if len(parts) > 1:
-                    return parts[-1].strip()
-                return line.strip()
-
-            def subtract_strings(str1, str2) -> str:
-                lines1 = str1.splitlines()
-                lines2 = str2.splitlines()
-
-                last_parts1 = [extract_last_part(line) for line in lines1]
-
-                remaining_lines = [
-                    line
-                    for line in lines2
-                    if extract_last_part(line) not in last_parts1
-                ]
-
-                result = '\n'.join(remaining_lines)
-                return result
-
-            if original_lint_error and lint_error:
-                lint_error = subtract_strings(original_lint_error, lint_error)
-                if lint_error == '':
-                    lint_error = None
-                    first_error_line = None
+            if original_lint_error is not None and lint_error is not None:
+                lint_error, first_error_line = Linter.refine_lint_error(
+                    original_lint_error,
+                    lint_error,
+                    is_append,
+                    is_insert,
+                    lines,
+                    start,
+                    end,
+                    n_added_lines,
+                )
 
             if lint_error is not None:
                 if first_error_line is not None:

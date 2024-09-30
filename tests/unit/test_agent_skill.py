@@ -577,50 +577,6 @@ check(any_int)"""
             assert result == expected
 
 
-def test_edit_file_by_replace_with_multiple_errors(tmp_path):
-    # If the file has multiple errors, but the suggested modification can only fix one error, make sure it is applied.
-    with patch.dict(os.environ, {'ENABLE_AUTO_LINT': 'True'}):
-        content = """def Sum(a,b):
-    try:
-        answer = a + b
-        return answer
-    except Exception:
-        answer = ANOTHER_CONSTANT
-        return answer
-Sum(1,1)
-"""
-
-        temp_file_path = tmp_path / 'problematic-file-test.py'
-        temp_file_path.write_text(content)
-
-        open_file(str(temp_file_path))
-
-        with io.StringIO() as buf:
-            with contextlib.redirect_stdout(buf):
-                edit_file_by_replace(
-                    str(temp_file_path),
-                    to_replace='        answer = a + b',
-                    new_content='        answer = a+b',
-                )
-            result = buf.getvalue()
-            expected = (
-                f'[File: {temp_file_path} (8 lines total after edit)]\n'
-                '(this is the beginning of the file)\n'
-                '1|def Sum(a,b):\n'
-                '2|    try:\n'
-                '3|        answer = a+b\n'
-                '4|        return answer\n'
-                '5|    except Exception:\n'
-                '6|        answer = ANOTHER_CONSTANT\n'
-                '7|        return answer\n'
-                '8|Sum(1,1)\n'
-                '(this is the end of the file)\n'
-                + MSG_FILE_UPDATED.format(line_number=3)
-                + '\n'
-            )
-            assert result.split('\n') == expected.split('\n')
-
-
 # ================================
 
 
@@ -1411,6 +1367,253 @@ def test_lint_file_disabled_undefined_name(tmp_path, capsys):
             + '\n'
         )
         assert result.split('\n') == expected.split('\n')
+
+
+def test_lint_file_ignore_existing_errors(tmp_path):
+    """
+    Make sure we allow edits as long as it does not introduce new errors. In other
+    words, we don't care about existing linting errors. Although they might be
+    real syntax issues, sometimes they are just false positives, or errors that
+    we don't care about.
+    """
+    with patch.dict(os.environ, {'ENABLE_AUTO_LINT': 'True'}):
+        content = """def some_valid_but_weird_function():
+    # this function is legitimate, yet static analysis tools like flake8
+    # reports 'F821 undefined name'
+    if 'variable' in locals():
+        print(variable)
+
+
+def some_wrong_but_unused_function():
+    # this function has a linting error, but it is not modified by us, and
+    # who knows, this function might be completely dead code
+    x = 1
+
+
+def sum(a, b):
+    return a - b
+"""
+
+        temp_file_path = tmp_path / 'problematic-file-test.py'
+        temp_file_path.write_text(content)
+
+        open_file(str(temp_file_path))
+
+        with io.StringIO() as buf:
+            with contextlib.redirect_stdout(buf):
+                edit_file_by_replace(
+                    str(temp_file_path),
+                    to_replace='    return a - b',
+                    new_content='    return a + b',
+                )
+            result = buf.getvalue()
+            expected = (
+                f'[File: {temp_file_path} (15 lines total after edit)]\n'
+                """(this is the beginning of the file)
+1|def some_valid_but_weird_function():
+2|    # this function is legitimate, yet static analysis tools like flake8
+3|    # reports 'F821 undefined name'
+4|    if 'variable' in locals():
+5|        print(variable)
+6|
+7|
+8|def some_wrong_but_unused_function():
+9|    # this function has a linting error, but it is not modified by us, and
+10|    # who knows, this function might be completely dead code
+11|    x = 1
+12|
+13|
+14|def sum(a, b):
+15|    return a + b
+(this is the end of the file)
+""" + MSG_FILE_UPDATED.format(line_number=15) + '\n'
+            )
+            assert result.split('\n') == expected.split('\n')
+
+
+def test_lint_file_catch_new_errors_in_edits(tmp_path):
+    """
+    Make sure we catch new linting errors in our edit chunk, and at the same
+    time, ignore old linting errors (in this case, the old linting error is
+    a false positive)
+    """
+    with patch.dict(os.environ, {'ENABLE_AUTO_LINT': 'True'}):
+        content = """def some_valid_but_weird_function():
+    # this function is legitimate, yet static analysis tools like flake8
+    # reports 'F821 undefined name'
+    if 'variable' in locals():
+        print(variable)
+
+
+def sum(a, b):
+    return a - b
+"""
+
+        temp_file_path = tmp_path / 'problematic-file-test.py'
+        temp_file_path.write_text(content)
+
+        open_file(str(temp_file_path))
+
+        with io.StringIO() as buf:
+            with contextlib.redirect_stdout(buf):
+                edit_file_by_replace(
+                    str(temp_file_path),
+                    to_replace='    return a - b',
+                    # we deliberately make a mistake here (LLMs can make mistakes like this)
+                    # note 'variable' is an undefined name
+                    new_content='    return a + variable',
+                )
+            result = buf.getvalue()
+
+            expected = (
+                '[Your proposed edit has introduced new syntax error(s). Please understand the errors and retry your edit command.]\n'
+                'ERRORS:\n'
+                f"{temp_file_path}:9:16: F821 undefined name 'variable'\n"
+                """[This is how your edit would have looked if applied]
+-------------------------------------------------
+(this is the beginning of the file)
+1|def some_valid_but_weird_function():
+2|    # this function is legitimate, yet static analysis tools like flake8
+3|    # reports 'F821 undefined name'
+4|    if 'variable' in locals():
+5|        print(variable)
+6|
+7|
+8|def sum(a, b):
+9|    return a + variable
+(this is the end of the file)
+-------------------------------------------------
+
+[This is the original code before your edit]
+-------------------------------------------------
+(this is the beginning of the file)
+1|def some_valid_but_weird_function():
+2|    # this function is legitimate, yet static analysis tools like flake8
+3|    # reports 'F821 undefined name'
+4|    if 'variable' in locals():
+5|        print(variable)
+6|
+7|
+8|def sum(a, b):
+9|    return a - b
+(this is the end of the file)
+-------------------------------------------------
+Your changes have NOT been applied. Please fix your edit command and try again.
+You either need to 1) Specify the correct start/end line arguments or 2) Correct your edit code.
+DO NOT re-run the same failed edit command. Running it again will lead to the same error.
+"""
+            )
+            assert result.split('\n') == expected.split('\n')
+
+
+def test_lint_file_catch_new_errors_outside_edits(tmp_path):
+    """
+    Make sure we catch new linting errors induced by our edits, even
+    though the error itself is not in the edit chunk
+    """
+    with patch.dict(os.environ, {'ENABLE_AUTO_LINT': 'True'}):
+        content = """def valid_func1():
+    print(my_sum(1, 2))
+
+
+def my_sum(a, b):
+    return a - b
+
+
+def valid_func2():
+    print(my_sum(0, 0))
+
+
+"""
+
+        # Add 100 lines of invalid code, which linter shall ignore
+        # because they are not being edited. For testing purpose, we
+        # must add these existing linting errors, otherwise the pre-edit
+        # linting would pass, and thus there won't be any comparison
+        # between pre-edit and post-edit linting.
+        for _ in range(100):
+            content += '\ninvalid_func()'
+
+        temp_file_path = tmp_path / 'problematic-file-test.py'
+        temp_file_path.write_text(content)
+
+        open_file(str(temp_file_path))
+
+        with io.StringIO() as buf:
+            with contextlib.redirect_stdout(buf):
+                edit_file_by_replace(
+                    str(temp_file_path),
+                    to_replace='def my_sum(a, b):',
+                    # we deliberately make a mistake here (LLMs can make mistakes like this)
+                    # by changing the function name, existing function calls would become invalid
+                    new_content='def my_sum2(a, b):',
+                )
+            result = buf.getvalue()
+
+            expected = (
+                '[Your proposed edit has introduced new syntax error(s). Please understand the errors and retry your edit command.]\n'
+                'ERRORS:\n'
+                f"{temp_file_path}:2:11: F821 undefined name 'my_sum'\n"
+                f"{temp_file_path}:10:11: F821 undefined name 'my_sum'\n"
+                """[This is how your edit would have looked if applied]
+-------------------------------------------------
+(this is the beginning of the file)
+1|def valid_func1():
+2|    print(my_sum(1, 2))
+3|
+4|
+5|def my_sum2(a, b):
+6|    return a - b
+7|
+8|
+9|def valid_func2():
+10|    print(my_sum(0, 0))
+11|
+12|
+13|
+14|invalid_func()
+15|invalid_func()
+16|invalid_func()
+17|invalid_func()
+18|invalid_func()
+19|invalid_func()
+20|invalid_func()
+21|invalid_func()
+(92 more lines below)
+-------------------------------------------------
+
+[This is the original code before your edit]
+-------------------------------------------------
+(this is the beginning of the file)
+1|def valid_func1():
+2|    print(my_sum(1, 2))
+3|
+4|
+5|def my_sum(a, b):
+6|    return a - b
+7|
+8|
+9|def valid_func2():
+10|    print(my_sum(0, 0))
+11|
+12|
+13|
+14|invalid_func()
+15|invalid_func()
+16|invalid_func()
+17|invalid_func()
+18|invalid_func()
+19|invalid_func()
+20|invalid_func()
+21|invalid_func()
+(92 more lines below)
+-------------------------------------------------
+Your changes have NOT been applied. Please fix your edit command and try again.
+You either need to 1) Specify the correct start/end line arguments or 2) Correct your edit code.
+DO NOT re-run the same failed edit command. Running it again will lead to the same error.
+"""
+            )
+            assert result.split('\n') == expected.split('\n')
 
 
 def test_parse_docx(tmp_path):
