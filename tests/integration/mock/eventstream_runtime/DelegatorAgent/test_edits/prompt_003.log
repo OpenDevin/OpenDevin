@@ -37,7 +37,7 @@ as well as observations you've made. This only includes the MOST RECENT
 actions and observations--more may have happened before that.
 They are time-ordered, with your most recent action at the bottom.
 
-[{"source": "agent", "action": "run", "args": {"command": "ls", "thought": "", "blocking": false, "keep_prompt": true, "is_confirmed": "confirmed"}}, {"source": "agent", "observation": "run", "content": "bad.txt\r\n\r\n[Python Interpreter: /openhands/poetry/openhands-ai-5O4_aCHf-py3.11/bin/python]\nopenhands@docker-desktop:/workspace $ ", "extras": {"command_id": -1, "command": "ls", "exit_code": 0}}, {"source": "agent", "action": "read", "args": {"path": "bad.txt", "start": 0, "end": -1, "thought": ""}}, {"source": "agent", "observation": "read", "content": "This is a stupid typoo.\nReally?\nNo mor typos!\nEnjoy!\n", "extras": {"path": "/workspace/bad.txt"}}]
+[{"source": "agent", "action": "run", "args": {"command": "ls", "thought": "", "blocking": false, "keep_prompt": true, "is_confirmed": "confirmed"}}, {"source": "agent", "observation": "run", "content": "bad.txt\r\n\r\n[Python Interpreter: /openhands/poetry/openhands-ai-5O4_aCHf-py3.11/bin/python]\nopenhands@opendevin-vm:/workspace $ ", "extras": {"command_id": -1, "command": "ls", "exit_code": 0}}, {"source": "agent", "action": "read", "args": {"path": "bad.txt", "start": 0, "end": -1, "thought": ""}}, {"source": "agent", "observation": "read", "content": "This is a stupid typoo.\nReally?\nNo mor typos!\nEnjoy!\n", "extras": {"path": "/workspace/bad.txt"}}]
 
 ## Format
 Your response MUST be in JSON format. It must be an object, and it must contain two fields:

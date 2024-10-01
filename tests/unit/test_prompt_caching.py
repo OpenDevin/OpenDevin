@@ -41,7 +41,7 @@ def test_get_messages_with_reminder(codeact_agent, mock_event_stream):
 
     codeact_agent.reset()
     messages = codeact_agent._get_messages(
-        Mock(history=mock_event_stream, max_iterations=5, iteration=0)
+        Mock(history=mock_event_stream, max_iterations=5, iteration=0, inputs=dict())
     )
 
     assert (
@@ -83,7 +83,7 @@ def test_get_messages_prompt_caching(codeact_agent, mock_event_stream):
 
     codeact_agent.reset()
     messages = codeact_agent._get_messages(
-        Mock(history=mock_event_stream, max_iterations=10, iteration=5)
+        Mock(history=mock_event_stream, max_iterations=10, iteration=5, inputs=dict())
     )
 
     # Check that only the last two user messages have cache_prompt=True
@@ -138,7 +138,7 @@ def test_get_messages_with_cmd_action(codeact_agent, mock_event_stream):
 
     codeact_agent.reset()
     messages = codeact_agent._get_messages(
-        Mock(history=mock_event_stream, max_iterations=5, iteration=0)
+        Mock(history=mock_event_stream, max_iterations=5, iteration=0, inputs=dict())
     )
 
     # Assert the presence of key elements in the messages
@@ -192,6 +192,7 @@ def test_prompt_caching_headers(codeact_agent, mock_event_stream):
     mock_state.history = mock_short_term_history
     mock_state.max_iterations = 5
     mock_state.iteration = 0
+    mock_state.inputs = dict()
 
     codeact_agent.reset()
 

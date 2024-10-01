@@ -24,7 +24,7 @@ as well as observations you've made. This only includes the MOST RECENT
 actions and observations--more may have happened before that.
 They are time-ordered, with your most recent action at the bottom.
 
-[{"source": "agent", "action": "run", "args": {"command": "git status", "thought": "", "blocking": false, "keep_prompt": true, "is_confirmed": "confirmed"}}, {"source": "agent", "observation": "run", "content": "fatal: not a git repository (or any parent up to mount point /)\r\nStopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).\r\n\r\n[Python Interpreter: /openhands/poetry/openhands-ai-5O4_aCHf-py3.11/bin/python]\nopenhands@docker-desktop:/workspace $ ", "extras": {"command_id": -1, "command": "git status", "exit_code": 128}}]
+[{"source": "agent", "action": "run", "args": {"command": "git status", "thought": "", "blocking": false, "keep_prompt": true, "is_confirmed": "confirmed"}}, {"source": "agent", "observation": "run", "content": "fatal: not a git repository (or any parent up to mount point /)\r\nStopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).\r\n\r\n[Python Interpreter: /openhands/poetry/openhands-ai-5O4_aCHf-py3.11/bin/python]\nopenhands@opendevin-vm:/workspace $ ", "extras": {"command_id": -1, "command": "git status", "exit_code": 128}}]
 
 If the last item in the history is an error, you should try to fix it.
 

@@ -74,7 +74,7 @@ class CodeActActionParserFinish(ActionParser):
             self.finish_command is not None
         ), 'self.finish_command should not be None when parse is called'
         thought = action_str.replace(self.finish_command.group(0), '').strip()
-        return AgentFinishAction(thought=thought)
+        return AgentFinishAction(thought=thought, outputs={'content': thought})
 
 
 class CodeActActionParserCmdRun(ActionParser):
@@ -159,7 +159,9 @@ class CodeActActionParserAgentDelegate(ActionParser):
         thought = action_str.replace(self.agent_delegate.group(0), '').strip()
         browse_actions = self.agent_delegate.group(1).strip()
         task = f'{thought}. I should start with: {browse_actions}'
-        return AgentDelegateAction(agent='BrowsingAgent', inputs={'task': task})
+        return AgentDelegateAction(
+            agent='BrowsingAgent', inputs={'task': task}, action_suffix='browse'
+        )
 
 
 class CodeActActionParserMessage(ActionParser):

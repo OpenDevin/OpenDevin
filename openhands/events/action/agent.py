@@ -74,6 +74,7 @@ class AgentDelegateAction(Action):
     inputs: dict
     thought: str = ''
     action: str = ActionType.DELEGATE
+    action_suffix: str = ''
 
     @property
     def message(self) -> str:

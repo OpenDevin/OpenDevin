@@ -9,6 +9,7 @@ load_dotenv()
 
 from agenthub import (  # noqa: E402
     browsing_agent,
+    coact_agent,
     codeact_agent,
     codeact_swe_agent,
     delegator_agent,
@@ -23,6 +24,7 @@ __all__ = [
     'delegator_agent',
     'dummy_agent',
     'browsing_agent',
+    'coact_agent',
 ]
 
 for agent in all_microagents.values():

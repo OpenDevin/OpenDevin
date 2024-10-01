@@ -24,6 +24,8 @@ class PromptManager:
         prompt_dir: str,
         agent_skills_docs: str,
         micro_agent: MicroAgent | None = None,
+        user_extra_vars: dict | None = None,  # Additional user template variables
+        system_extra_vars: dict | None = None,  # Additional system template variables
     ):
         self.prompt_dir: str = prompt_dir
         self.agent_skills_docs: str = agent_skills_docs
@@ -31,6 +33,9 @@ class PromptManager:
         self.system_template: Template = self._load_template('system_prompt')
         self.user_template: Template = self._load_template('user_prompt')
         self.micro_agent: MicroAgent | None = micro_agent
+
+        self.user_extra_vars = user_extra_vars or {}
+        self.system_extra_vars = system_extra_vars or {}
 
     def _load_template(self, template_name: str) -> Template:
         template_path = os.path.join(self.prompt_dir, f'{template_name}.j2')
@@ -43,6 +48,7 @@ class PromptManager:
     def system_message(self) -> str:
         rendered = self.system_template.render(
             agent_skills_docs=self.agent_skills_docs,
+            **self.system_extra_vars,
         ).strip()
         return rendered
 
@@ -58,6 +64,7 @@ class PromptManager:
         into a more specialized agent that is tailored to the user's task.
         """
         rendered = self.user_template.render(
-            micro_agent=self.micro_agent.content if self.micro_agent else None
+            micro_agent=self.micro_agent.content if self.micro_agent else None,
+            **self.user_extra_vars,
         )
         return rendered.strip()

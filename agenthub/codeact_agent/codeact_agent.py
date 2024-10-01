@@ -92,6 +92,12 @@ class CodeActAgent(Agent):
             agent_skills_docs=AgentSkillsRequirement.documentation,
             micro_agent=self.micro_agent,
         )
+        self.stop_sequences = [
+            '</execute_ipython>',
+            '</execute_bash>',
+            '</execute_browse>',
+        ]
+        self.initial_task_str = ['']
 
     def action_to_str(self, action: Action) -> str:
         if isinstance(action, CmdRunAction):
@@ -101,7 +107,7 @@ class CodeActAgent(Agent):
         elif isinstance(action, IPythonRunCellAction):
             return f'{action.thought}\n<execute_ipython>\n{action.code}\n</execute_ipython>'
         elif isinstance(action, AgentDelegateAction):
-            return f'{action.thought}\n<execute_browse>\n{action.inputs["task"]}\n</execute_browse>'
+            return f'{action.thought}\n<execute_{action.action_suffix}>\n{action.inputs["task"]}\n</execute_{action.action_suffix}>'
         elif isinstance(action, MessageAction):
             return action.content
         elif isinstance(action, AgentFinishAction) and action.source == 'agent':
@@ -197,11 +203,7 @@ class CodeActAgent(Agent):
         messages = self._get_messages(state)
         params = {
             'messages': self.llm.format_messages_for_llm(messages),
-            'stop': [
-                '</execute_ipython>',
-                '</execute_bash>',
-                '</execute_browse>',
-            ],
+            'stop': self.stop_sequences,
         }
 
         response = self.llm.completion(**params)
@@ -209,6 +211,15 @@ class CodeActAgent(Agent):
         return self.action_parser.parse(response)
 
     def _get_messages(self, state: State) -> list[Message]:
+        delegated_task = state.inputs.get('task')
+        if delegated_task is not None:
+            # CodeActAgent is delegated a task
+            delegated_task = str(delegated_task)
+            self.initial_task_str[0] = delegated_task
+            delegated_task = '\n' + delegated_task
+        else:
+            delegated_task = ''
+
         messages: list[Message] = [
             Message(
                 role='system',
@@ -223,7 +234,7 @@ class CodeActAgent(Agent):
                 role='user',
                 content=[
                     TextContent(
-                        text=self.prompt_manager.initial_user_message,
+                        text=self.prompt_manager.initial_user_message + delegated_task,
                         cache_prompt=self.llm.is_caching_prompt_active(),  # if the user asks the same query,
                     )
                 ],
@@ -238,6 +249,10 @@ class CodeActAgent(Agent):
                 message = self.get_observation_message(event)
             else:
                 raise ValueError(f'Unknown event type: {type(event)}')
+
+            if message and message.role == 'user' and not self.initial_task_str[0]:
+                # first user message
+                self.initial_task_str[0] = message.content[0].text
 
             # add regular message
             if message:

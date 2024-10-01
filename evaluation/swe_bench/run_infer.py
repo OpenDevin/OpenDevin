@@ -40,11 +40,14 @@ USE_INSTANCE_IMAGE = os.environ.get('USE_INSTANCE_IMAGE', 'false').lower() == 't
 AGENT_CLS_TO_FAKE_USER_RESPONSE_FN = {
     'CodeActAgent': codeact_user_response,
     'CodeActSWEAgent': codeact_user_response,
+    'CoActPlannerAgent': codeact_user_response,
 }
 
+codeact_inst_suffix = 'When you think you have fixed the issue through code changes, please run the following command: <execute_bash> exit </execute_bash>.\n'
 AGENT_CLS_TO_INST_SUFFIX = {
-    'CodeActAgent': 'When you think you have fixed the issue through code changes, please run the following command: <execute_bash> exit </execute_bash>.\n',
-    'CodeActSWEAgent': 'When you think you have fixed the issue through code changes, please run the following command: <execute_bash> exit </execute_bash>.\n',
+    'CodeActAgent': codeact_inst_suffix,
+    'CodeActSWEAgent': codeact_inst_suffix,
+    'CoActPlannerAgent': codeact_inst_suffix,
 }
 
 
@@ -67,6 +70,28 @@ def get_instruction(instance: pd.Series, metadata: EvalMetadata):
                 f'--- BEGIN HINTS ---\n{instance.hints_text}\n--- END HINTS ---\n'
             )
         instruction += CODEACT_SWE_PROMPT.format(workspace_dir_name=workspace_dir_name)
+    elif metadata.agent_class == 'CoActPlannerAgent':
+        instruction = (
+            'We are currently solving the following issue within our repository. Here is the issue text:\n'
+            '--- BEGIN ISSUE ---\n'
+            f'{instance.problem_statement}\n'
+            '--- END ISSUE ---\n\n'
+        )
+        instruction += """
+Let's come up with 2 global plans sequentially to address the issue.
+- First, examine the codebase and locate the relevant code for the issue. Then we'll come up with the FIRST detailed plan with all the edits to resolve it.
+- After the local agent finishes executing the first plan, navigate the codebase again and come up with the SECOND detailed plan to create exactly ONE unit test at the correct location to verify the change has actually resolved the issue. As the LAST phase, explicitly tell the executor to execute it after creating that test case. If the test failed and after debugging it the local executor believes the previous fixes are incorrect, request for a new plan and include the error with explanation for that request.
+- If the local agent fails to execute the test you suggested and request for a new plan, examine the
+codebase again and come up with the last third plan to fix the issue and unit test.
+"""
+        instruction += (
+            'IMPORTANT: You should ONLY interact with the environment provided to you AND NEVER ASK FOR HUMAN HELP.\n'
+            'You only have 3 plans, so use them wisely.\n'
+            'Do NOT try to perform the fix for the failed test by yourself as a planner agent, use the third plan instead.\n'
+            'Remember to ONLY delegate the plan after you find out the proper positions to make the code changes.\n'
+            'You should NOT modify any existing test case files. If needed, you can add new test cases in a NEW file to reproduce the issue.\n'
+            'You SHOULD INCLUDE PROPER INDENTATION in your edit commands.\n'
+        )
     else:
         # Testing general agents
         instruction = (
