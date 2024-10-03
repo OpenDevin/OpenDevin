@@ -70,8 +70,7 @@ class LogBuffer:
             return logs
 
     def stream_logs(self):
-        """
-        Stream logs from the Docker container in a separate thread.
+        """Stream logs from the Docker container in a separate thread.
 
         This method runs in its own thread to handle the blocking
         operation of reading log lines from the Docker SDK's synchronous generator.
@@ -114,6 +113,21 @@ class EventStreamRuntime(Runtime):
     """
 
     container_name_prefix = 'openhands-sandbox-'
+
+    # Need to provide this method to allow inheritors to init the Runtime
+    # without initting the EventStreamRuntime.
+    def init_base_runtime(
+        self,
+        config: AppConfig,
+        event_stream: EventStream,
+        sid: str = 'default',
+        plugins: list[PluginRequirement] | None = None,
+        env_vars: dict[str, str] | None = None,
+        status_message_callback: Callable | None = None,
+    ):
+        super().__init__(
+            config, event_stream, sid, plugins, env_vars, status_message_callback
+        )
 
     def __init__(
         self,
@@ -175,8 +189,8 @@ class EventStreamRuntime(Runtime):
             plugins=plugins,
         )
 
-        # will initialize both the event stream and the env vars
-        super().__init__(
+        # Will initialize both the event stream and the env vars
+        self.init_base_runtime(
             config, event_stream, sid, plugins, env_vars, status_message_callback
         )
 
@@ -184,7 +198,6 @@ class EventStreamRuntime(Runtime):
         self.send_status_message('STATUS$WAITING_FOR_CLIENT')
 
         self._wait_until_alive()
-
         self.setup_initial_env()
 
         logger.info(

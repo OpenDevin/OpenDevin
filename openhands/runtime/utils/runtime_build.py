@@ -19,9 +19,8 @@ def get_runtime_image_repo():
     return os.getenv('OH_RUNTIME_RUNTIME_IMAGE_REPO', 'ghcr.io/all-hands-ai/runtime')
 
 
-def _put_source_code_to_dir(temp_dir: str):
-    """Builds the project source tarball directly in temp_dir and unpacks it.
-    The OpenHands source code ends up in the temp_dir/code directory.
+def put_source_tarball_to_dir(temp_dir: str):
+    """Builds the project source tarball directly in temp_dir.
 
     Parameters:
     - temp_dir (str): The directory to put the source code in
@@ -60,6 +59,19 @@ def _put_source_code_to_dir(temp_dir: str):
         logger.error(f'Source distribution not found at {tarball_path}. (Do you need to run `make build`?)')
         raise RuntimeError(f'Source distribution not found at {tarball_path}')
     logger.info(f'Source distribution created at {tarball_path}')
+
+    return (tarball_path, package_version)
+
+
+def _put_source_code_to_dir(temp_dir: str):
+    """Builds the project source tarball directly in temp_dir and unpacks it.
+    The OpenHands source code ends up in the temp_dir/code directory.
+
+    Parameters:
+    - temp_dir (str): The directory to put the source code in
+    """
+
+    tarball_path, package_version = put_source_tarball_to_dir(temp_dir)
 
     # Unzip the tarball
     shutil.unpack_archive(tarball_path, temp_dir)

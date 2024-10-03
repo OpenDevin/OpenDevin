@@ -422,7 +422,9 @@ class RuntimeClient:
                 logger.debug(f'{self.pwd} != {jupyter_pwd} -> reset Jupyter PWD')
                 reset_jupyter_pwd_code = f'import os; os.chdir("{self.pwd}")'
                 _aux_action = IPythonRunCellAction(code=reset_jupyter_pwd_code)
-                _reset_obs = await _jupyter_plugin.run(_aux_action)
+                _reset_obs: IPythonRunCellObservation = await _jupyter_plugin.run(
+                    _aux_action
+                )
                 logger.debug(
                     f'Changed working directory in IPython to: {self.pwd}. Output: {_reset_obs}'
                 )

@@ -13,6 +13,10 @@
 # API key for E2B
 #e2b_api_key = ""
 
+# API key for Modal
+#modal_api_token_id = ""
+#modal_api_token_secret = ""
+
 # Base path for the workspace
 workspace_base = "./workspace"
 

@@ -18,7 +18,7 @@ from openhands.events.observation.delegate import AgentDelegateObservation
 from openhands.runtime import get_runtime_cls
 
 TEST_RUNTIME = os.getenv('TEST_RUNTIME')
-assert TEST_RUNTIME in ['eventstream', 'remote']
+assert TEST_RUNTIME in ['eventstream', 'remote', 'modal']
 _ = get_runtime_cls(TEST_RUNTIME)  # make sure it does not raise an error
 
 CONFIG = load_app_config()

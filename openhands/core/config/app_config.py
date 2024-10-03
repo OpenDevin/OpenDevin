@@ -65,6 +65,8 @@ class AppConfig:
     max_iterations: int = OH_MAX_ITERATIONS
     max_budget_per_task: float | None = None
     e2b_api_key: str = ''
+    modal_api_token_id: str = ''
+    modal_api_token_secret: str = ''
     disable_color: bool = False
     jwt_secret: str = uuid.uuid4().hex
     debug: bool = False
