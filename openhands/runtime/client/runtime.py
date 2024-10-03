@@ -18,6 +18,7 @@ from openhands.events.action import (
     BrowseInteractiveAction,
     BrowseURLAction,
     CmdRunAction,
+    FileEditAction,
     FileReadAction,
     FileWriteAction,
     IPythonRunCellAction,
@@ -452,6 +453,9 @@ class EventStreamRuntime(Runtime):
         return self.run_action(action)
 
     def write(self, action: FileWriteAction) -> Observation:
+        return self.run_action(action)
+
+    def edit(self, action: FileEditAction) -> Observation:
         return self.run_action(action)
 
     def browse(self, action: BrowseURLAction) -> Observation:

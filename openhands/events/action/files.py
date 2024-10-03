@@ -39,3 +39,23 @@ class FileWriteAction(Action):
     @property
     def message(self) -> str:
         return f'Writing file: {self.path}'
+
+
+@dataclass
+class FileEditAction(Action):
+    diff_block: str
+    thought: str = ''
+    action: str = ActionType.EDIT
+    runnable: ClassVar[bool] = True
+    security_risk: ActionSecurityRisk | None = None
+
+    def __str__(self) -> str:
+        ret = '**EditFileAction**\n'
+        if self.thought:
+            ret += f'THOUGHT: {self.thought}\n'
+        ret += f'DIFF BLOCK:\n{self.diff_block}\n'
+        return ret
+
+    @property
+    def message(self) -> str:
+        return f'Edit Diff block: {self.diff_block}'

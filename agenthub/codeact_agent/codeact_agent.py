@@ -11,12 +11,14 @@ from openhands.events.action import (
     AgentDelegateAction,
     AgentFinishAction,
     CmdRunAction,
+    FileEditAction,
     IPythonRunCellAction,
     MessageAction,
 )
 from openhands.events.observation import (
     AgentDelegateObservation,
     CmdOutputObservation,
+    FileEditObservation,
     IPythonRunCellObservation,
     UserRejectObservation,
 )
@@ -34,7 +36,7 @@ from openhands.utils.prompt import PromptManager
 
 
 class CodeActAgent(Agent):
-    VERSION = '1.9'
+    VERSION = '1.10'
     """
     The Code Act Agent is a minimalist agent.
     The agent works by passing the model a list of action-observation pairs and prompting the model to take the next step.
@@ -102,6 +104,8 @@ class CodeActAgent(Agent):
             return f'{action.thought}\n<execute_ipython>\n{action.code}\n</execute_ipython>'
         elif isinstance(action, AgentDelegateAction):
             return f'{action.thought}\n<execute_browse>\n{action.inputs["task"]}\n</execute_browse>'
+        elif isinstance(action, FileEditAction):
+            return f'{action.thought}\n<execute_edit>\n{action.diff_block}\n</execute_edit>'
         elif isinstance(action, MessageAction):
             return action.content
         elif isinstance(action, AgentFinishAction) and action.source == 'agent':
@@ -111,6 +115,7 @@ class CodeActAgent(Agent):
     def get_action_message(self, action: Action) -> Message | None:
         if (
             isinstance(action, AgentDelegateAction)
+            or isinstance(action, FileEditAction)
             or isinstance(action, CmdRunAction)
             or isinstance(action, IPythonRunCellAction)
             or isinstance(action, MessageAction)
@@ -151,6 +156,9 @@ class CodeActAgent(Agent):
             text = '\n'.join(splitted)
             text = truncate_content(text, max_message_chars)
             return Message(role='user', content=[TextContent(text=text)])
+        elif isinstance(obs, FileEditObservation):
+            text = obs_prefix + truncate_content(obs.content, max_message_chars)
+            return Message(role='user', content=[TextContent(text=text)])
         elif isinstance(obs, AgentDelegateObservation):
             text = obs_prefix + truncate_content(
                 obs.outputs['content'] if 'content' in obs.outputs else '',
@@ -162,7 +170,7 @@ class CodeActAgent(Agent):
             text += '\n[Error occurred in processing last action]'
             return Message(role='user', content=[TextContent(text=text)])
         elif isinstance(obs, UserRejectObservation):
-            text = 'OBSERVATION:\n' + truncate_content(obs.content, max_message_chars)
+            text = obs_prefix + truncate_content(obs.content, max_message_chars)
             text += '\n[Last action has been rejected by the user]'
             return Message(role='user', content=[TextContent(text=text)])
         else:
@@ -185,6 +193,7 @@ class CodeActAgent(Agent):
         - CmdRunAction(command) - bash command to run
         - IPythonRunCellAction(code) - IPython code to run
         - AgentDelegateAction(agent, inputs) - delegate action for (sub)task
+        - FileEditAction(diff_block) - Search/Replace block to edit.
         - MessageAction(content) - Message action to run (e.g. ask for clarification)
         - AgentFinishAction() - end the interaction
         """
@@ -201,6 +210,7 @@ class CodeActAgent(Agent):
                 '</execute_ipython>',
                 '</execute_bash>',
                 '</execute_browse>',
+                '</execute_edit>',
             ],
         }
 
