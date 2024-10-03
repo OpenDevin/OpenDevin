@@ -69,6 +69,7 @@ class AppConfig:
     jwt_secret: str = uuid.uuid4().hex
     debug: bool = False
     enable_cli_session: bool = False
+    runloop_api_key: str | None = None
     file_uploads_max_file_size_mb: int = 0
     file_uploads_restrict_file_types: bool = False
     file_uploads_allowed_extensions: list[str] = field(default_factory=lambda: ['.*'])

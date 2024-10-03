@@ -61,6 +61,9 @@ workspace_base = "./workspace"
 # Runtime environment
 #runtime = "eventstream"
 
+# Runloop API key
+#runloop_api_key = ""
+
 # Name of the default agent
 #default_agent = "CodeActAgent"
 

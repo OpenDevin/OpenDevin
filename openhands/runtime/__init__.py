@@ -15,6 +15,10 @@ def get_runtime_cls(name: str):
         from openhands.runtime.remote.runtime import RemoteRuntime
 
         return RemoteRuntime
+    elif name == 'runloop':
+        from openhands.runtime.runloop.runtime import RunloopRuntime
+
+        return RunloopRuntime
     else:
         raise ValueError(f'Runtime {name} not supported')
 
