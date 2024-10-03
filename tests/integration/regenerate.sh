@@ -159,6 +159,7 @@ run_test() {
 
   if grep -q "Address already in use" $TMP_FILE; then
     echo "Error: Address already in use found in the output. Exiting."
+    echo "Browsing tests need a local http server. Please check if there's any zombie process running start_http_server.py."
     exit 1
   fi
 
@@ -166,10 +167,23 @@ run_test() {
   return $pytest_exit_code
 }
 
+# browsing capability needs a local http server
+launch_http_server() {
+  poetry run python $SCRIPT_DIR/start_http_server.py &
+  HTTP_SERVER_PID=$!
+  echo "Test http server launched, PID = $HTTP_SERVER_PID"
+  sleep 5
+}
+
 cleanup() {
   cd "$PROJECT_ROOT/tests"
   cd "$PROJECT_ROOT"
   echo "Cleaning up before exit..."
+  if [ -n "$HTTP_SERVER_PID" ]; then
+    echo "Killing HTTP server..."
+    kill $HTTP_SERVER_PID || true
+    unset HTTP_SERVER_PID
+  fi
   [ -f "$TMP_FILE" ] && rm "$TMP_FILE"
   echo "Cleanup done!"
 }
@@ -257,6 +271,10 @@ for ((i = 0; i < num_of_tests; i++)); do
   # skip other tests if only one test is specified
   if [[ -n "$ONLY_TEST_NAME" && "$ONLY_TEST_NAME" != "$test_name" ]]; then
     continue
+  fi
+
+  if [ "$test_name" = "test_browse_internet" ]; then
+    launch_http_server
   fi
 
   for ((j = 0; j < num_of_agents; j++)); do
@@ -377,6 +395,10 @@ for ((i = 0; i < num_of_tests; i++)); do
       sleep 1
     fi
   done
+
+  if [ "$test_name" = "test_browse_internet" ]; then
+    kill $HTTP_SERVER_PID || true
+  fi
 done
 
 rm -rf "$LOG_DIR"
