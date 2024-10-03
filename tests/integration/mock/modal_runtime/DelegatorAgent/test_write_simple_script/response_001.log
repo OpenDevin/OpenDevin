@@ -1,6 +1,0 @@
-{
-  "action": "run",
-  "args": {
-    "command": "ls"
-  }
-}

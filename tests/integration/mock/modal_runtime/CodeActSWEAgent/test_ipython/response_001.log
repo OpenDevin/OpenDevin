@@ -1,3 +1,0 @@
-<execute_ipython>
-create_file('/workspace/test.txt')
-append_file('/workspace/test.txt', 'hello world')

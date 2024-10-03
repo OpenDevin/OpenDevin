@@ -223,8 +223,6 @@ def test_ipython_module(current_test_name: str):
     reason='currently only BrowsingAgent and CodeActAgent are capable of searching the internet',
 )
 def test_browse_internet(current_test_name: str):
-    print(f"{os.getenv('DEFAULT_AGENT')}")
-
     # Execute the task
     task = 'Browse localhost:8000, and tell me the ultimate answer to life. Do not ask me for confirmation at any point.'
     final_state: State | None = asyncio.run(

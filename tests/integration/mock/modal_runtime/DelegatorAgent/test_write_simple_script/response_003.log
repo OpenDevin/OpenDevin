@@ -1,8 +1,0 @@
-{
-  "action": "finish",
-  "args": {
-    "outputs": {
-      "summary": "The codebase appears to be empty. Engineers should start everything from scratch."
-    }
-  }
-}

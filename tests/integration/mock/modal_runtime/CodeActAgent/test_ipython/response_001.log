@@ -1,4 +1,0 @@
-Sure! Let's create the text file and write "hello world" to it.
-
-<execute_ipython>
-create_file('/workspace/test.txt')

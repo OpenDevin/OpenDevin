@@ -1,6 +1,0 @@
-{
-  "action": "reject",
-  "args": {
-    "reason": "Not a valid git repository or no diff in the staging area."
-  }
-}
