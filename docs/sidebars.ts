@@ -9,6 +9,11 @@ const sidebars: SidebarsConfig = {
       id: 'usage/getting-started',
     },
     {
+      type: 'doc',
+      label: 'Configuration',
+      id: 'src/configuration',
+    },
+    {
       type: 'category',
       label: 'Usage Methods',
       items: [
