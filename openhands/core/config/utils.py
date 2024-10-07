@@ -277,10 +277,43 @@ def get_llm_config_arg(
     return None
 
 
-# Command line arguments
-def get_parser() -> argparse.ArgumentParser:
+def add_eval_parser(group: argparse._ArgumentGroup):
+    group.add_argument(
+        '--eval-output-dir',
+        default='evaluation/evaluation_outputs/outputs',
+        type=str,
+        help='The directory to save evaluation output',
+    )
+    group.add_argument(
+        '--eval-n-limit',
+        default=None,
+        type=int,
+        help='The number of instances to evaluate',
+    )
+    group.add_argument(
+        '--eval-num-workers',
+        default=4,
+        type=int,
+        help='The number of workers to use for evaluation',
+    )
+    group.add_argument(
+        '--eval-note',
+        default=None,
+        type=str,
+        help='The note to add to the evaluation directory',
+    )
+    group.add_argument(
+        '--eval-ids',
+        default=None,
+        type=str,
+        help='The comma-separated list (in quotes) of IDs of the instances to evaluate',
+    )
+
+
+def get_parser(add_eval: bool = True) -> argparse.ArgumentParser:
     """Get the parser for the command line arguments."""
     parser = argparse.ArgumentParser(description='Run an agent with a specific task')
+
     parser.add_argument(
         '--config-file',
         type=str,
@@ -326,31 +359,6 @@ def get_parser() -> argparse.ArgumentParser:
         type=float,
         help='The maximum budget allowed per task, beyond which the agent will stop.',
     )
-    # --eval configs are for evaluations only
-    parser.add_argument(
-        '--eval-output-dir',
-        default='evaluation/evaluation_outputs/outputs',
-        type=str,
-        help='The directory to save evaluation output',
-    )
-    parser.add_argument(
-        '--eval-n-limit',
-        default=None,
-        type=int,
-        help='The number of instances to evaluate',
-    )
-    parser.add_argument(
-        '--eval-num-workers',
-        default=4,
-        type=int,
-        help='The number of workers to use for evaluation',
-    )
-    parser.add_argument(
-        '--eval-note',
-        default=None,
-        type=str,
-        help='The note to add to the evaluation directory',
-    )
     parser.add_argument(
         '-l',
         '--llm-config',
@@ -365,12 +373,10 @@ def get_parser() -> argparse.ArgumentParser:
         type=str,
         help='Name for the session',
     )
-    parser.add_argument(
-        '--eval-ids',
-        default=None,
-        type=str,
-        help='The comma-separated list (in quotes) of IDs of the instances to evaluate',
-    )
+
+    if add_eval:
+        eval_group = parser.add_argument_group('Evaluation options')
+        add_eval_parser(eval_group)
     return parser
 
 

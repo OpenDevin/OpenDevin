@@ -86,6 +86,7 @@ reportlab = "*"
 [tool.coverage.run]
 concurrency = ["gevent"]
 
+
 [tool.poetry.group.runtime.dependencies]
 jupyterlab = "*"
 notebook = "*"
@@ -116,6 +117,7 @@ ignore = ["D1"]
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 
+
 [tool.poetry.group.evaluation.dependencies]
 streamlit = "*"
 whatthepatch = "*"
@@ -134,3 +136,4 @@ style = "semver"
 
 [tool.poetry.scripts]
 openhands = "openhands.core.cli:main"
+oh = "openhands.core.cli:main"

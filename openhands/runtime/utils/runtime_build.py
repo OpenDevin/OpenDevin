@@ -57,7 +57,9 @@ def _put_source_code_to_dir(temp_dir: str):
         raise RuntimeError(f'Image build failed:\n{result}')
 
     if not os.path.exists(tarball_path):
-        logger.error(f'Source distribution not found at {tarball_path}. (Do you need to run `make build`?)')
+        logger.error(
+            f'Source distribution not found at {tarball_path}. (Do you need to run `make build`?)'
+        )
         raise RuntimeError(f'Source distribution not found at {tarball_path}')
     logger.info(f'Source distribution created at {tarball_path}')
 
