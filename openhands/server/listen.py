@@ -754,4 +754,16 @@ async def security_api(request: Request):
     )
 
 
+@app.get("/", response_class=FileResponse)
+async def read_root():
+    response = FileResponse("./frontend/dist/index.html")
+    response.headers["Cache-Control"] = "no-store, max-age=0"
+    return response
+
+@app.get("/index.html", response_class=FileResponse)
+async def read_index():
+    response = FileResponse("./frontend/dist/index.html")
+    response.headers["Cache-Control"] = "no-store, max-age=0"
+    return response
+
 app.mount('/', StaticFiles(directory='./frontend/dist', html=True), name='dist')
