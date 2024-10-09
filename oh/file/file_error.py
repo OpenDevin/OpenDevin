@@ -1,0 +1,2 @@
+class FileError(Exception):
+    pass

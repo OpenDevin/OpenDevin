@@ -1,0 +1,85 @@
+FROM {{ base_image }}
+
+# Shared environment variables (regardless of init or not)
+ENV POETRY_VIRTUALENVS_PATH=/openhands/poetry
+ENV MAMBA_ROOT_PREFIX=/openhands/micromamba
+
+{% if not skip_init %}
+# ================================================================
+# START: Build Runtime Image from Scratch
+# ================================================================
+{% if 'ubuntu' in base_image and (base_image.endswith(':latest') or base_image.endswith(':24.04')) %}
+{% set LIBGL_MESA = 'libgl1' %}
+{% else %}
+{% set LIBGL_MESA = 'libgl1-mesa-glx' %}
+{% endif %}
+
+# Install necessary packages and clean up in one layer
+RUN apt-get update && \
+    apt-get install -y wget curl sudo apt-utils {{ LIBGL_MESA }} libasound2-plugins git && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Remove UID 1000 if it's called pn--this fixes the nikolaik image for ubuntu users
+RUN if getent passwd 1000 | grep -q pn; then userdel pn; fi
+
+# Create necessary directories
+RUN mkdir -p /openhands && \
+    mkdir -p /openhands/logs && \
+    mkdir -p /openhands/poetry
+
+# Install micromamba
+RUN mkdir -p /openhands/micromamba/bin && \
+    /bin/bash -c "PREFIX_LOCATION=/openhands/micromamba BIN_FOLDER=/openhands/micromamba/bin INIT_YES=no CONDA_FORGE_YES=yes $(curl -L https://micro.mamba.pm/install.sh)" && \
+    /openhands/micromamba/bin/micromamba config remove channels defaults && \
+    /openhands/micromamba/bin/micromamba config list
+
+# Create the openhands virtual environment and install poetry and python
+RUN /openhands/micromamba/bin/micromamba create -n openhands -y && \
+    /openhands/micromamba/bin/micromamba install -n openhands -c conda-forge poetry python=3.12 -y
+
+# ================================================================
+# END: Build Runtime Image from Scratch
+# ================================================================
+{% endif %}
+
+# ================================================================
+# START: Copy Project and Install/Update Dependencies
+# ================================================================
+RUN if [ -d /openhands/code ]; then rm -rf /openhands/code; fi
+COPY ./code /openhands/code
+
+# Below RUN command sets up the Python environment using Poetry,
+# installs project dependencies, and configures the container
+# for OpenHands development.
+# It creates and activates a virtual environment, installs necessary
+# tools like Playwright, sets up environment variables, and configures
+# the bash environment to ensure the correct Python interpreter and
+# virtual environment are used by default.
+WORKDIR /openhands/code
+RUN \
+    /openhands/micromamba/bin/micromamba config set changeps1 False && \
+    # Configure Poetry and create virtual environment
+    /openhands/micromamba/bin/micromamba run -n openhands poetry config virtualenvs.path /openhands/poetry && \
+    /openhands/micromamba/bin/micromamba run -n openhands poetry env use python3.12 && \
+    # Install project dependencies
+    /openhands/micromamba/bin/micromamba run -n openhands poetry install --only main,runtime --no-interaction --no-root && \
+    # Update and install additional tools
+    apt-get update && \
+    /openhands/micromamba/bin/micromamba run -n openhands poetry run pip install playwright && \
+    /openhands/micromamba/bin/micromamba run -n openhands poetry run playwright install --with-deps chromium && \
+    # Set environment variables
+    echo "OH_INTERPRETER_PATH=$(/openhands/micromamba/bin/micromamba run -n openhands poetry run python -c "import sys; print(sys.executable)")" >> /etc/environment && \
+    # Install extra dependencies if specified
+    {{ extra_deps }} {% if extra_deps %} && {% endif %} \
+    # Clear caches
+    /openhands/micromamba/bin/micromamba run -n openhands poetry cache clear --all . && \
+    # Set permissions
+    {% if not skip_init %}chmod -R g+rws /openhands/poetry && {% endif %} \
+    mkdir -p /openhands/workspace && chmod -R g+rws,o+rw /openhands/workspace && \
+    # Clean up
+    apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
+    /openhands/micromamba/bin/micromamba clean --all
+# ================================================================
+# END: Copy Project and Install/Update Dependencies
+# ================================================================
