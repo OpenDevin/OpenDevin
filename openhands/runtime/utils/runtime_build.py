@@ -4,6 +4,7 @@ import importlib.metadata
 import os
 import shutil
 import tempfile
+from pathlib import Path
 
 import docker
 from dirhash import dirhash
@@ -99,6 +100,25 @@ def _generate_dockerfile(
     return dockerfile_content
 
 
+def get_from_scratch_hash() -> str:
+    project_dir = os.path.dirname(os.path.dirname(os.path.abspath(openhands.__file__)))
+    hashes = [
+        dirhash(
+            Path(project_dir, to_hash),
+            'md5',
+            ignore=[
+                '.*/',  # hidden directories
+                '__pycache__/',
+                '*.pyc',
+            ],
+        )
+        for to_hash in ['agenthub', 'openhands']
+    ]
+    hashes.append(hashlib.md5(open('pyproject.toml', 'rb').read()).hexdigest())
+    dir_hash = hashlib.md5(":".join(hashes).encode()).hexdigest()
+    return dir_hash 
+
+
 def prep_docker_build_folder(
     dir_path: str,
     base_image: str,
@@ -137,15 +157,7 @@ def prep_docker_build_folder(
         file.write(dockerfile_content)
 
     # Get the MD5 hash of the dir_path directory
-    dir_hash = dirhash(
-        dir_path,
-        'md5',
-        ignore=[
-            '.*/',  # hidden directories
-            '__pycache__/',
-            '*.pyc',
-        ],
-    )
+    dir_hash = get_from_scratch_hash()
     hash = f'v{oh_version}_{dir_hash}'
     logger.info(
         f'Input base image: {base_image}\n'
@@ -224,14 +236,9 @@ def build_runtime_image(
 
     See https://docs.all-hands.dev/modules/usage/architecture/runtime for more details.
     """
-    # Calculate the hash for the docker build folder (source code and Dockerfile)
-    with tempfile.TemporaryDirectory() as temp_dir:
-        from_scratch_hash = prep_docker_build_folder(
-            temp_dir,
-            base_image=base_image,
-            skip_init=False,
-            extra_deps=extra_deps,
-        )
+
+    # Calculate the has for the source directory
+    from_scratch_hash = get_from_scratch_hash()
 
     runtime_image_repo, runtime_image_tag = get_runtime_image_repo_and_tag(base_image)
 
