@@ -406,6 +406,36 @@ def _edit_impl(lines, start, end, content):
     return content, n_added_lines
 
 
+def _subtract_strings(str1, str2) -> str:
+    """Extract the linter errors caused by the modification.
+
+    Args:
+        str1: str: The original linter errors.
+        str2: str: The linter errors after the modification.
+
+    Returns:
+        str: The linter errors caused by the modification.
+    """
+
+    def _extract_last_part(line):
+        parts = line.split(':')
+        if len(parts) > 1:
+            return parts[-1].strip()
+        return line.strip()
+
+    lines1 = str1.splitlines()
+    lines2 = str2.splitlines()
+
+    last_parts1 = [_extract_last_part(line) for line in lines1]
+
+    remaining_lines = [
+        line for line in lines2 if _extract_last_part(line) not in last_parts1
+    ]
+
+    result = '\n'.join(remaining_lines)
+    return result
+
+
 def _edit_file_impl(
     file_name: str,
     start: int | None = None,
@@ -544,7 +574,7 @@ def _edit_file_impl(
                 return result
 
             if original_lint_error and lint_error:
-                lint_error = subtract_strings(original_lint_error, lint_error)
+                lint_error = _subtract_strings(original_lint_error, lint_error)
                 if lint_error == '':
                     lint_error = None
                     first_error_line = None
@@ -904,10 +934,6 @@ __all__ = [
     'goto_line',
     'scroll_down',
     'scroll_up',
-    'create_file',
-    'edit_file_by_replace',
-    'insert_content_at_line',
-    'append_file',
     'search_dir',
     'search_file',
     'find_file',

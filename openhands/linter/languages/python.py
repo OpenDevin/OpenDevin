@@ -1,5 +1,6 @@
 from typing import List
 
+from openhands.core.logger import openhands_logger as logger
 from openhands.linter.base import BaseLinter, LintResult
 from openhands.linter.utils import run_cmd
 
@@ -39,11 +40,31 @@ def flake_lint(filepath: str) -> list[LintResult]:
             _msg = parts[3].strip()
             if len(parts) > 4:
                 _msg += ': ' + parts[4].strip()
+
+            try:
+                line_num = int(parts[1])
+            except ValueError as e:
+                logger.warning(
+                    f'Error parsing flake8 output for line: {e}. Parsed parts: {parts}. Skipping...'
+                )
+                continue
+
+            try:
+                column_num = int(parts[2])
+            except ValueError as e:
+                column_num = 1
+                _msg = (
+                    parts[2].strip() + ' ' + _msg
+                )  # add the unparsed message to the original message
+                logger.warning(
+                    f'Error parsing flake8 output for column: {e}. Parsed parts: {parts}. Using default column 1.'
+                )
+
             results.append(
                 LintResult(
                     file=filepath,
-                    line=int(parts[1]),
-                    column=int(parts[2]),
+                    line=line_num,
+                    column=column_num,
                     message=_msg,
                 )
             )

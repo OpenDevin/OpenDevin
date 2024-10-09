@@ -164,12 +164,20 @@ model = "gpt-4o"
 # If model is vision capable, this option allows to disable image processing (useful for cost reduction).
 #disable_vision = true
 
-[llm.gpt4o-mini]
-# API key to use
+# NOTE: It is mandantory to set a `draft_editor` for each LLM
+[llm.draft_editor]
 api_key = "your-api-key"
-
-# Model to use
 model = "gpt-4o-mini"
+
+
+[llm.gpt4o-mini]
+api_key = "your-api-key"
+model = "gpt-4o"
+
+[llm.gpt4o-mini.draft_editor]
+api_key = "your-api-key"
+model = "gpt-4o-mini"
+
 
 #################################### Agent ###################################
 # Configuration for agents (group name starts with 'agent')

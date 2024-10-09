@@ -6236,6 +6236,20 @@ files = [
 pyasn1 = ">=0.4.6,<0.7.0"
 
 [[package]]
+name = "pybind11"
+version = "2.13.6"
+description = "Seamless operability between C++11 and Python"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "pybind11-2.13.6-py3-none-any.whl", hash = "sha256:237c41e29157b962835d356b370ededd57594a26d5894a795960f0047cb5caf5"},
+    {file = "pybind11-2.13.6.tar.gz", hash = "sha256:ba6af10348c12b24e92fa086b39cfba0eff619b61ac77c406167d813b096d39a"},
+]
+
+[package.extras]
+global = ["pybind11-global (==2.13.6)"]
+
+[[package]]
 name = "pycodestyle"
 version = "2.12.1"
 description = "Python style guide checker"
@@ -6512,6 +6526,26 @@ python-versions = "*"
 files = [
     {file = "pylatexenc-2.10.tar.gz", hash = "sha256:3dd8fd84eb46dc30bee1e23eaab8d8fb5a7f507347b23e5f38ad9675c84f40d3"},
 ]
+
+[[package]]
+name = "pylcs"
+version = "0.1.1"
+description = "super fast cpp implementation of longest common subsequence"
+optional = false
+python-versions = "*"
+files = [
+    {file = "pylcs-0.1.1-cp310-cp310-win_amd64.whl", hash = "sha256:7b8adea6b41dff27332c967533ec3c42a5e94171be778d6f01f0c5cee82e7604"},
+    {file = "pylcs-0.1.1-cp311-cp311-win_amd64.whl", hash = "sha256:9ff06e037c54056cb67d6ef5ad946c0360afeff7d43be67ce09e55201ecc15cc"},
+    {file = "pylcs-0.1.1-cp35-cp35m-win_amd64.whl", hash = "sha256:d2ebf340aa180d841939d9ec1168dfd072992dda1d48148ceb07b65b1ab62ffa"},
+    {file = "pylcs-0.1.1-cp36-cp36m-win_amd64.whl", hash = "sha256:b6c43b63e20048f8fec7e122fbc08c238940a0ee5302bf84a70db22c7f8cc836"},
+    {file = "pylcs-0.1.1-cp37-cp37m-win_amd64.whl", hash = "sha256:db52d55cfdf813af974bcc164aedbd29274da83086877bf05778aa7fbf777f7f"},
+    {file = "pylcs-0.1.1-cp38-cp38-win_amd64.whl", hash = "sha256:954495f1c164ccb722b835e7028783f8a38d85ed5f6ff7b9d50143896c6cff9b"},
+    {file = "pylcs-0.1.1-cp39-cp39-win_amd64.whl", hash = "sha256:0f4c82fad8c0429abef9e98fb98904459c4f5f9fb9b6ce20e0df0841a6a48a54"},
+    {file = "pylcs-0.1.1.tar.gz", hash = "sha256:632c69235d77cda0ba524d82796878801d2f46131fc59e730c98767fc4ce1307"},
+]
+
+[package.dependencies]
+pybind11 = ">=2.2"
 
 [[package]]
 name = "pyparsing"
@@ -9700,4 +9734,4 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "93b50980145da0512e14f3a892d74b963ac523668327d7c4f4d6e4c41c0cb26c"
+content-hash = "1d2d26ce785e0fd7c4f698f712eb55ccf26ae4c30ccd7597b61b9b11894f24f8"

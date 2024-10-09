@@ -81,7 +81,9 @@ def get_instruction(instance: pd.Series, metadata: EvalMetadata):
         instruction += (
             'IMPORTANT: You should ONLY interact with the environment provided to you AND NEVER ASK FOR HUMAN HELP.\n'
             'You should NOT modify any existing test case files. If needed, you can add new test cases in a NEW file to reproduce the issue.\n'
-            'You SHOULD INCLUDE PROPER INDENTATION in your edit commands.\n'
+            # TODO: uncomment these once we finalized editing
+            # 'You should NEVER use web browsing or any other web-based tools.\n'
+            # 'You should ALWAYS use the default Python interpreter available in the <execute_bash> environment to run code related to the provided issue and/or repository.\n'
         )
 
     # NOTE: You can actually set slightly different instruction for different agents
@@ -122,7 +124,6 @@ def get_config(
     config = AppConfig(
         default_agent=metadata.agent_class,
         run_as_openhands=False,
-        max_budget_per_task=4,
         max_iterations=metadata.max_iterations,
         runtime=os.environ.get('RUNTIME', 'eventstream'),
         sandbox=SandboxConfig(
@@ -472,10 +473,9 @@ if __name__ == '__main__':
 
     details = {}
     _agent_cls = openhands.agenthub.Agent.get_cls(args.agent_cls)
-    if hasattr(_agent_cls, 'system_message'):
-        details['system_message'] = _agent_cls.system_message
-    if hasattr(_agent_cls, 'in_context_example'):
-        details['in_context_example'] = _agent_cls.in_context_example
+    if hasattr(_agent_cls, 'prompt_manager'):
+        details['system_message'] = _agent_cls.prompt_manager.system_message
+        details['initial_user_message'] = _agent_cls.prompt_manager.initial_user_message
 
     metadata = make_metadata(
         llm_config,

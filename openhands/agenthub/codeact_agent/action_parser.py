@@ -1,11 +1,17 @@
 import re
 
-from openhands.controller.action_parser import ActionParser, ResponseParser
+from openhands.controller.action_parser import (
+    ActionParser,
+    ResponseParser,
+)
+from openhands.core.exceptions import LLMMalformedActionError
+from openhands.core.logger import openhands_logger as logger
 from openhands.events.action import (
     Action,
     AgentDelegateAction,
     AgentFinishAction,
     CmdRunAction,
+    FileEditAction,
     IPythonRunCellAction,
     MessageAction,
 )
@@ -14,6 +20,7 @@ from openhands.events.action import (
 class CodeActResponseParser(ResponseParser):
     """Parser action:
     - CmdRunAction(command) - bash command to run
+    - FileEditAction(path, content) - edit a file
     - IPythonRunCellAction(code) - IPython code to run
     - AgentDelegateAction(agent, inputs) - delegate action for (sub)task
     - MessageAction(content) - Message action to run (e.g. ask for clarification)
@@ -25,6 +32,7 @@ class CodeActResponseParser(ResponseParser):
         super().__init__()
         self.action_parsers = [
             CodeActActionParserFinish(),
+            CodeActActionParserFileEdit(),
             CodeActActionParserCmdRun(),
             CodeActActionParserIPythonRunCell(),
             CodeActActionParserAgentDelegate(),
@@ -46,6 +54,8 @@ class CodeActResponseParser(ResponseParser):
 
             if f'<execute_{lang}>' in action and f'</execute_{lang}>' not in action:
                 action += f'</execute_{lang}>'
+        if '<file_edit' in action and '</file_edit>' not in action:
+            action += '</file_edit>'
         return action
 
     def parse_action(self, action_str: str) -> Action:
@@ -179,3 +189,87 @@ class CodeActActionParserMessage(ActionParser):
 
     def parse(self, action_str: str) -> Action:
         return MessageAction(content=action_str, wait_for_response=True)
+
+
+class CodeActActionParserFileEdit(ActionParser):
+    """Parser action:
+    - FileEditAction(path, content) - edit a file
+    """
+
+    def __init__(self):
+        self.file_edit_match: re.Match | None = None
+
+    def check_condition(self, action_str: str) -> bool:
+        if '<file_edit' not in action_str:
+            return False
+
+        # Updated regex to make start and end optional
+        self.file_edit_match = re.search(
+            r'<file_edit\s+path=(["\']?)(.*?)\1(?:\s+start=(["\']?)(.*?)\3)?(?:\s+end=(["\']?)(.*?)\5)?\s*>(.*?)</file_edit>',
+            action_str,
+            re.DOTALL,
+        )
+
+        if self.file_edit_match is None:
+            logger.error(
+                f'FileEditAction detected but the format is incorrect. Unable to match for <file_edit> in:\n{"-" * 80}\n{action_str}\n{"-" * 80}'
+            )
+            raise LLMMalformedActionError(
+                'FileEditAction detected but the format is incorrect. Usage:\n'
+                '<file_edit path="[path]" start=[start_line] end=[end_line]>\n'
+                '[content_to_edit]\n'
+                '</file_edit>\n'
+            )
+
+        path = self.file_edit_match.group(2)
+        start = self.file_edit_match.group(4)
+        end = self.file_edit_match.group(6)
+
+        if not path:
+            raise LLMMalformedActionError(
+                'FileEditAction detected but no `path` specified. You should specify the path of the file to edit.'
+            )
+
+        if start:
+            try:
+                int(start)
+            except ValueError:
+                raise LLMMalformedActionError(
+                    f'FileEditAction detected but `start` is not a valid integer: {start}'
+                )
+
+        if end:
+            try:
+                int(end)
+            except ValueError:
+                raise LLMMalformedActionError(
+                    f'FileEditAction detected but `end` is not a valid integer: {end}'
+                )
+
+        return True
+
+    def parse(self, action_str: str) -> Action:
+        assert (
+            self.file_edit_match is not None
+        ), 'self.file_edit_match should not be None when parse is called'
+
+        file_path = self.file_edit_match.group(2).strip()
+        start_line = (
+            int(self.file_edit_match.group(4))
+            if self.file_edit_match.group(4)
+            else None
+        )
+        end_line = (
+            int(self.file_edit_match.group(6))
+            if self.file_edit_match.group(6)
+            else None
+        )
+        content = self.file_edit_match.group(7)
+        thought = action_str.replace(self.file_edit_match.group(0), '').strip()
+
+        action = FileEditAction(path=file_path, content=content, thought=thought)
+        if start_line is not None:
+            action.start = start_line
+        if end_line is not None:
+            action.end = end_line
+        return action

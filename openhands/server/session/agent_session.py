@@ -217,13 +217,23 @@ class AgentSession:
                 'Runtime must be initialized before the agent controller'
             )
 
-        logger.info(
+        msg = (
             '\n--------------------------------- OpenHands Configuration ---------------------------------\n'
             f'LLM: {agent.llm.config.model}\n'
             f'Base URL: {agent.llm.config.base_url}\n'
+        )
+        if agent.llm.config.draft_editor:
+            msg += (
+                f'Draft editor LLM (for file editing): {agent.llm.config.draft_editor.model}\n'
+                f'Draft editor LLM (for file editing) Base URL: {agent.llm.config.draft_editor.base_url}\n'
+            )
+        msg += (
             f'Agent: {agent.name}\n'
+            f'Runtime: {self.runtime.__class__.__name__}\n'
+            f'Plugins: {agent.sandbox_plugins}\n'
             '-------------------------------------------------------------------------------------------'
         )
+        logger.info(msg)
 
         self.controller = AgentController(
             sid=self.sid,

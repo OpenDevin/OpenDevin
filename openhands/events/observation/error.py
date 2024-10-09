@@ -13,3 +13,6 @@ class ErrorObservation(Observation):
     @property
     def message(self) -> str:
         return self.content
+
+    def __str__(self) -> str:
+        return f'**ErrorObservation**\n{self.content}'

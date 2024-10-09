@@ -3,6 +3,16 @@ from abc import ABC, abstractmethod
 from openhands.events.action import Action
 
 
+class ActionParseError(Exception):
+    """Exception raised when the response from the LLM cannot be parsed into an action."""
+
+    def __init__(self, error: str):
+        self.error = error
+
+    def __str__(self):
+        return self.error
+
+
 class ResponseParser(ABC):
     """This abstract base class is a general interface for an response parser dedicated to
     parsing the action from the response from the LLM.

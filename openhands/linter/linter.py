@@ -4,6 +4,7 @@ from collections import defaultdict
 from openhands.linter.base import BaseLinter, LinterException, LintResult
 from openhands.linter.languages.python import PythonLinter
 from openhands.linter.languages.treesitter import TreesitterBasicLinter
+from openhands.utils.diff import get_diff, parse_diff
 
 
 class DefaultLinter(BaseLinter):
@@ -33,3 +34,33 @@ class DefaultLinter(BaseLinter):
             if res:
                 return res
         return []
+
+    def lint_file_diff(
+        self, original_file_path: str, updated_file_path: str
+    ) -> list[LintResult]:
+        """Only return lint errors that are introduced by the diff.
+
+        Args:
+            original_file_path: The original file path.
+            updated_file_path: The updated file path.
+
+        Returns:
+            A list of lint errors that are introduced by the diff.
+        """
+        updated_lint_error: list[LintResult] = self.lint(updated_file_path)
+
+        with open(original_file_path, 'r') as f:
+            original_file_content = f.read()
+        with open(updated_file_path, 'r') as f:
+            updated_file_content = f.read()
+        diff = get_diff(original_file_content, updated_file_content)
+        changes = parse_diff(diff)
+
+        # Select errors that are introduced by the new diff
+        selected_errors = []
+        for change in changes:
+            new_lineno = change.new
+            for error in updated_lint_error:
+                if error.line == new_lineno:
+                    selected_errors.append(error)
+        return selected_errors

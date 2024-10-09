@@ -11,6 +11,7 @@ MAX_ITER=$5
 NUM_WORKERS=$6
 DATASET=$7
 SPLIT=$8
+N_RUNS=$9
 
 if [ -z "$NUM_WORKERS" ]; then
   NUM_WORKERS=1
@@ -69,26 +70,38 @@ fi
 if [ -n "$EXP_NAME" ]; then
   EVAL_NOTE="$EVAL_NOTE-$EXP_NAME"
 fi
-echo "EVAL_NOTE: $EVAL_NOTE"
+
+function run_eval() {
+  local eval_note=$1
+  COMMAND="poetry run python evaluation/swe_bench/run_infer.py \
+    --agent-cls $AGENT \
+    --llm-config $MODEL_CONFIG \
+    --max-iterations $MAX_ITER \
+    --max-chars 10000000 \
+    --eval-num-workers $NUM_WORKERS \
+    --eval-note $eval_note \
+    --dataset $DATASET \
+    --split $SPLIT"
+
+  if [ -n "$EVAL_LIMIT" ]; then
+    echo "EVAL_LIMIT: $EVAL_LIMIT"
+    COMMAND="$COMMAND --eval-n-limit $EVAL_LIMIT"
+  fi
+
+  # Run the command
+  eval $COMMAND
+}
 
 unset SANDBOX_ENV_GITHUB_TOKEN # prevent the agent from using the github token to push
-
-COMMAND="poetry run python evaluation/swe_bench/run_infer.py \
-  --agent-cls $AGENT \
-  --llm-config $MODEL_CONFIG \
-  --max-iterations $MAX_ITER \
-  --max-chars 10000000 \
-  --eval-num-workers $NUM_WORKERS \
-  --eval-note $EVAL_NOTE \
-  --dataset $DATASET \
-  --split $SPLIT"
-
-if [ -n "$EVAL_LIMIT" ]; then
-  echo "EVAL_LIMIT: $EVAL_LIMIT"
-  COMMAND="$COMMAND --eval-n-limit $EVAL_LIMIT"
+if [ -z "$N_RUNS" ]; then
+  N_RUNS=1
+  echo "N_RUNS not specified, use default $N_RUNS"
 fi
 
-# Run the command
-eval $COMMAND
+for i in $(seq 1 $N_RUNS); do
+  current_eval_note="$EVAL_NOTE-run_$i"
+  echo "EVAL_NOTE: $current_eval_note"
+  run_eval $current_eval_note
+done
 
 checkout_original_branch

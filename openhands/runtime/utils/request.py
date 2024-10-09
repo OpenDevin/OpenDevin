@@ -1,7 +1,12 @@
 from typing import Any, Callable, Type
 
 import requests
-from requests.exceptions import ConnectionError, Timeout
+from requests.exceptions import (
+    ChunkedEncodingError,
+    ConnectionError,
+    HTTPError,
+    Timeout,
+)
 from tenacity import (
     retry,
     retry_if_exception,
@@ -9,6 +14,7 @@ from tenacity import (
     stop_after_delay,
     wait_exponential,
 )
+from urllib3.exceptions import IncompleteRead
 
 from openhands.utils.tenacity_stop import stop_if_should_exit
 
@@ -30,6 +36,9 @@ def is_404_error(exception):
 DEFAULT_RETRY_EXCEPTIONS = [
     ConnectionError,
     Timeout,
+    HTTPError,
+    IncompleteRead,
+    ChunkedEncodingError,
 ]
 
 

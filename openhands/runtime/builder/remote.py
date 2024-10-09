@@ -98,7 +98,7 @@ class RemoteRuntimeBuilder(RuntimeBuilder):
                 'EXPIRED',
             ]:
                 error_message = status_data.get(
-                    'error', f'Build failed with status: {status}'
+                    'error', f'Build failed with status: {status}. Build ID: {build_id}'
                 )
                 logger.error(error_message)
                 raise RuntimeError(error_message)

@@ -52,6 +52,8 @@ python-pptx = "*"
 pylatexenc = "*"
 tornado = "*"
 python-dotenv = "*"
+pylcs = "^0.1.1"
+whatthepatch = "^1.0.6"
 protobuf = ">=4.21.6,<6.0.0" # chromadb currently fails on 5.0+
 
 [tool.poetry.group.llama-index.dependencies]

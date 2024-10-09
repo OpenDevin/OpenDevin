@@ -21,6 +21,7 @@ from evaluation.utils.shared import (
 )
 from openhands.core.config import (
     AppConfig,
+    LLMConfig,
     SandboxConfig,
     get_parser,
 )
@@ -72,6 +73,9 @@ def get_config(instance: pd.Series) -> AppConfig:
         f'Please make sure this image exists. '
         f'Submit an issue on https://github.com/All-Hands-AI/OpenHands if you run into any issues.'
     )
+    default_llm = LLMConfig(
+        draft_editor=LLMConfig()  # just to prevent eval errors
+    )
     config = AppConfig(
         run_as_openhands=False,
         runtime=os.environ.get('RUNTIME', 'eventstream'),
@@ -87,6 +91,7 @@ def get_config(instance: pd.Series) -> AppConfig:
         workspace_base=None,
         workspace_mount_path=None,
     )
+    config.set_llm_config(default_llm)
     return config
 
 
