@@ -1,21 +1,32 @@
-# To get started with Dependabot version updates, you'll need to specify which
-# package ecosystems to update and where the package manifests are located.
-# Please see the documentation for all configuration options:
-# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
-
 version: 2
 updates:
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
       interval: "daily"
-    open-pull-requests-limit: 20
+    open-pull-requests-limit: 1
+    groups:
+      # put packages in their own group if they have a history of breaking the build or needing to be reverted
+      pre-commit:
+        patterns:
+          - "pre-commit"
+      boto3:
+        patterns:
+          - "boto3"
+      security-all:
+        applies-to: "security-updates"
+        patterns:
+          - "*"
+      version-all:
+        applies-to: "version-updates"
+        patterns:
+          - "*"
 
   - package-ecosystem: "npm"
     directory: "/frontend"
     schedule:
       interval: "daily"
-    open-pull-requests-limit: 20
+    open-pull-requests-limit: 1
     groups:
       docusaurus:
         patterns:
@@ -23,12 +34,21 @@ updates:
       eslint:
         patterns:
           - "*eslint*"
+      security-all:
+        applies-to: "security-updates"
+        patterns:
+          - "*"
+      version-all:
+        applies-to: "version-updates"
+        patterns:
+          - "*"
 
   - package-ecosystem: "npm"
     directory: "/docs"
     schedule:
-      interval: "daily"
-    open-pull-requests-limit: 20
+      interval: "weekly"
+      day: "wednesday"
+    open-pull-requests-limit: 1
     groups:
       docusaurus:
         patterns:
@@ -36,3 +56,11 @@ updates:
       eslint:
         patterns:
           - "*eslint*"
+      security-all:
+        applies-to: "security-updates"
+        patterns:
+          - "*"
+      version-all:
+        applies-to: "version-updates"
+        patterns:
+          - "*"
