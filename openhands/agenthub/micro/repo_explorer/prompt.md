@@ -20,7 +20,7 @@ When you're done, put your summary into the output of the `finish` action.
 
 ## History
 {{ instructions.history_truncated }}
-{{ history_to_json(state.history, max_events=20) }}
+{{ history_to_json(max_events=20) }}
 
 ## Format
 {{ instructions.format.action }}

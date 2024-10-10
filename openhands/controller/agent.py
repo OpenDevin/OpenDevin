@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Type
 
+from openhands.memory.conversation_memory import ConversationMemory
+
 if TYPE_CHECKING:
     from openhands.controller.state.state import State
     from openhands.core.config import AgentConfig
@@ -19,19 +21,22 @@ class Agent(ABC):
     This abstract base class is an general interface for an agent dedicated to
     executing a specific instruction and allowing human interaction with the
     agent during execution.
-    It tracks the execution status and maintains a history of interactions.
+    It tracks the execution status and maintains a reference to the conversation memory.
     """
 
     _registry: dict[str, Type['Agent']] = {}
     sandbox_plugins: list[PluginRequirement] = []
+    memory: ConversationMemory
 
     def __init__(
         self,
         llm: LLM,
         config: 'AgentConfig',
+        memory: ConversationMemory,
     ):
         self.llm = llm
         self.config = config
+        self.memory = memory
         self._complete = False
 
     @property
@@ -55,7 +60,7 @@ class Agent(ABC):
         to prepare the agent for restarting the instruction or cleaning up before destruction.
 
         """
-        # TODO clear history
+        self.memory.reset()
         self._complete = False
 
         if self.llm:

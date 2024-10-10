@@ -13,7 +13,7 @@ from openhands.core.config import AgentConfig
 from openhands.events import EventSource
 from openhands.events.action import MessageAction
 from openhands.events.stream import EventStream
-from openhands.memory.history import ShortTermHistory
+from openhands.memory.conversation_memory import ConversationMemory
 from openhands.storage import get_file_store
 
 
@@ -69,18 +69,18 @@ def test_coder_agent_with_summary(event_stream: EventStream, agent_configs: dict
         }
     ]
 
+    memory = ConversationMemory(event_stream=event_stream)
+
     coder_agent = Agent.get_cls('CoderAgent')(
-        llm=mock_llm, config=agent_configs['CoderAgent']
+        llm=mock_llm, config=agent_configs['CoderAgent'], memory=memory
     )
     assert coder_agent is not None
 
     task = 'This is a dummy task'
-    history = ShortTermHistory()
-    history.set_event_stream(event_stream)
     event_stream.add_event(MessageAction(content=task), EventSource.USER)
 
     summary = 'This is a dummy summary about this repo'
-    state = State(history=history, inputs={'summary': summary})
+    state = State(inputs={'summary': summary})
     coder_agent.step(state)
 
     mock_llm.completion.assert_called_once()
@@ -114,18 +114,18 @@ def test_coder_agent_without_summary(event_stream: EventStream, agent_configs: d
         }
     ]
 
+    memory = ConversationMemory(event_stream=event_stream)
+
     coder_agent = Agent.get_cls('CoderAgent')(
-        llm=mock_llm, config=agent_configs['CoderAgent']
+        llm=mock_llm, config=agent_configs['CoderAgent'], memory=memory
     )
     assert coder_agent is not None
 
     task = 'This is a dummy task'
-    history = ShortTermHistory()
-    history.set_event_stream(event_stream)
     event_stream.add_event(MessageAction(content=task), EventSource.USER)
 
     # set state without codebase summary
-    state = State(history=history)
+    state = State()
     coder_agent.step(state)
 
     mock_llm.completion.assert_called_once()

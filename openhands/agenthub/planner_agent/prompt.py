@@ -4,7 +4,6 @@ from openhands.core.schema import ActionType
 from openhands.core.utils import json
 from openhands.events.action import (
     Action,
-    NullAction,
 )
 from openhands.events.serialization.action import action_from_dict
 from openhands.events.serialization.event import event_to_memory
@@ -115,9 +114,13 @@ def get_hint(latest_action_id: str) -> str:
     return hints.get(latest_action_id, '')
 
 
-def get_prompt_and_images(
-    state: State, max_message_chars: int
-) -> tuple[str, list[str]]:
+def get_prompt(
+    state: State,
+    task: str,
+    latest_action: Action | None,
+    history_str: str,
+    max_message_chars: int,
+) -> str:
     """Gets the prompt for the planner agent.
 
     Formatted with the most recent action-observation pairs, current task, and hint based on last action
@@ -131,24 +134,6 @@ def get_prompt_and_images(
     # the plan
     plan_str = json.dumps(state.root_task.to_dict(), indent=2)
 
-    # the history
-    history_dicts = []
-    latest_action: Action = NullAction()
-
-    # retrieve the latest HISTORY_SIZE events
-    for event_count, event in enumerate(state.history.get_events(reverse=True)):
-        if event_count >= HISTORY_SIZE:
-            break
-        if latest_action == NullAction() and isinstance(event, Action):
-            latest_action = event
-        history_dicts.append(event_to_memory(event, max_message_chars))
-
-    # history_dicts is in reverse order, lets fix it
-    history_dicts.reverse()
-
-    # and get it as a JSON string
-    history_str = json.dumps(history_dicts, indent=2)
-
     # the plan status
     current_task = state.root_task.get_current_task()
     if current_task is not None:
@@ -159,20 +144,21 @@ def get_prompt_and_images(
         plan_status = "You're not currently working on any tasks. Your next action MUST be to mark a task as in_progress."
 
     # the hint, based on the last action
-    hint = get_hint(event_to_memory(latest_action, max_message_chars).get('action', ''))
+    hint = (
+        get_hint(event_to_memory(latest_action, max_message_chars).get('action', ''))
+        if latest_action
+        else ''
+    )
     logger.info('HINT:\n' + hint, extra={'msg_type': 'DETAIL'})
-
-    # the last relevant user message (the task)
-    message, image_urls = state.get_current_user_intent()
 
     # finally, fill in the prompt
     return prompt % {
-        'task': message,
+        'task': task,
         'plan': plan_str,
         'history': history_str,
         'hint': hint,
         'plan_status': plan_status,
-    }, image_urls
+    }
 
 
 def parse_response(response: str) -> Action:

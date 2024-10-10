@@ -20,6 +20,7 @@ from openhands.events.observation import (
 from openhands.events.serialization import event_from_dict, event_to_dict
 from openhands.events.stream import EventStreamSubscriber
 from openhands.llm.llm import LLM
+from openhands.memory.conversation_memory import ConversationMemory
 from openhands.runtime.utils.shutdown_listener import should_continue
 from openhands.server.session.agent_session import AgentSession
 from openhands.storage.files import FileStore
@@ -77,6 +78,7 @@ class Session:
         self.agent_session.event_stream.add_event(
             AgentStateChangedObservation('', AgentState.LOADING), EventSource.AGENT
         )
+
         # Extract the agent-relevant arguments from the request
         args = {key: value for key, value in data.get('args', {}).items()}
         agent_cls = args.get(ConfigType.AGENT, self.config.default_agent)
@@ -101,9 +103,14 @@ class Session:
 
         # TODO: override other LLM config & agent config groups (#2075)
 
+        # set up the required arguments for the agent
         llm = LLM(config=self.config.get_llm_config_from_agent(agent_cls))
         agent_config = self.config.get_agent_config(agent_cls)
-        agent = Agent.get_cls(agent_cls)(llm, agent_config)
+
+        # initialize conversation memory
+        memory = ConversationMemory(self.agent_session.event_stream)
+
+        agent = Agent.get_cls(agent_cls)(llm, agent_config, memory=memory)
 
         # Create the agent session
         try:

@@ -4,6 +4,7 @@ from openhands.core.config import AgentConfig
 from openhands.events.action import Action, AgentDelegateAction, AgentFinishAction
 from openhands.events.observation import AgentDelegateObservation
 from openhands.llm.llm import LLM
+from openhands.memory.conversation_memory import ConversationMemory
 
 
 class DelegatorAgent(Agent):
@@ -14,20 +15,22 @@ class DelegatorAgent(Agent):
 
     current_delegate: str = ''
 
-    def __init__(self, llm: LLM, config: AgentConfig):
-        """Initialize the Delegator Agent with an LLM
+    def __init__(self, llm: LLM, config: AgentConfig, memory: ConversationMemory):
+        """Initialize the Delegator Agent with an LLM and memory
 
         Parameters:
-        - llm (LLM): The llm to be used by this agent
+        - llm: The llm to be used by this agent
+        - config: The agent config
+        - memory: The memory to be used by this agent
         """
-        super().__init__(llm, config)
+        super().__init__(llm, config, memory=memory)
 
     def step(self, state: State) -> Action:
         """Checks to see if current step is completed, returns AgentFinishAction if True.
         Otherwise, delegates the task to the next agent in the pipeline.
 
         Parameters:
-        - state (State): The current state given the previous actions and observations
+        - state: The current state given the previous actions and observations
 
         Returns:
         - AgentFinishAction: If the last state was 'completed', 'verified', or 'abandoned'
@@ -35,18 +38,18 @@ class DelegatorAgent(Agent):
         """
         if self.current_delegate == '':
             self.current_delegate = 'study'
-            task, _ = state.get_current_user_intent()
+            task, _ = self.memory.get_current_user_intent()
             return AgentDelegateAction(
                 agent='StudyRepoForTaskAgent', inputs={'task': task}
             )
 
         # last observation in history should be from the delegate
-        last_observation = state.history.get_last_observation()
+        last_observation = self.memory.get_last_observation()
 
         if not isinstance(last_observation, AgentDelegateObservation):
             raise Exception('Last observation is not an AgentDelegateObservation')
 
-        goal, _ = state.get_current_user_intent()
+        goal, _ = self.memory.get_current_user_intent()
         if self.current_delegate == 'study':
             self.current_delegate = 'coder'
             return AgentDelegateAction(

@@ -10,7 +10,7 @@ and call the `finish` action with `outputs.answer` set to the answer.
 
 ## History
 {{ instructions.history_truncated }}
-{{ history_to_json(state.history, max_events=20) }}
+{{ history_to_json(max_events=20) }}
 
 If the last item in the history is an error, you should try to fix it.
 

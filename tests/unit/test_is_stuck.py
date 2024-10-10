@@ -5,7 +5,6 @@ import pytest
 from pytest import TempPathFactory
 
 from openhands.controller.agent_controller import AgentController
-from openhands.controller.state.state import State
 from openhands.controller.stuck import StuckDetector
 from openhands.events.action import CmdRunAction, FileReadAction, MessageAction
 from openhands.events.action.commands import IPythonRunCellAction
@@ -17,12 +16,11 @@ from openhands.events.observation.commands import IPythonRunCellObservation
 from openhands.events.observation.empty import NullObservation
 from openhands.events.observation.error import ErrorObservation
 from openhands.events.stream import EventSource, EventStream
-from openhands.memory.history import ShortTermHistory
 from openhands.storage import get_file_store
 
 
-def collect_events(stream):
-    return [event for event in stream.get_events()]
+def collect_events(stream: EventStream):
+    return [event for event in stream.get_events(filter_out_types=())]
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -55,10 +53,7 @@ def event_stream(temp_dir):
 class TestStuckDetector:
     @pytest.fixture
     def stuck_detector(self, event_stream):
-        state = State(inputs={}, max_iterations=50)
-        state.history.set_event_stream(event_stream)
-
-        return StuckDetector(state)
+        return StuckDetector(event_stream)
 
     def _impl_syntax_error_events(
         self,
@@ -115,23 +110,24 @@ class TestStuckDetector:
         cmd_observation._cause = cmd_action._id
         event_stream.add_event(cmd_observation, EventSource.USER)
 
-        # stuck_detector.state.history.set_event_stream(event_stream)
-
         assert stuck_detector.is_stuck() is False
 
     def test_is_stuck_repeating_action_observation(
         self, stuck_detector: StuckDetector, event_stream: EventStream
     ):
+        # TODO this is a good test for almost stuck
         message_action = MessageAction(content='Done', wait_for_response=False)
         message_action._source = EventSource.USER
 
         hello_action = MessageAction(content='Hello', wait_for_response=False)
         hello_observation = NullObservation('')
 
-        # 2 events
+        # 2 events:
         event_stream.add_event(hello_action, EventSource.USER)
         event_stream.add_event(hello_observation, EventSource.USER)
+        assert len(collect_events(event_stream)) == 2
 
+        # 4 events:
         cmd_action_1 = CmdRunAction(command='ls')
         event_stream.add_event(cmd_action_1, EventSource.AGENT)
         cmd_observation_1 = CmdOutputObservation(
@@ -139,8 +135,9 @@ class TestStuckDetector:
         )
         cmd_observation_1._cause = cmd_action_1._id
         event_stream.add_event(cmd_observation_1, EventSource.USER)
-        # 4 events
+        assert len(collect_events(event_stream)) == 4
 
+        # 6 events:
         cmd_action_2 = CmdRunAction(command='ls')
         event_stream.add_event(cmd_action_2, EventSource.AGENT)
         cmd_observation_2 = CmdOutputObservation(
@@ -148,17 +145,18 @@ class TestStuckDetector:
         )
         cmd_observation_2._cause = cmd_action_2._id
         event_stream.add_event(cmd_observation_2, EventSource.USER)
-        # 6 events
+        assert len(collect_events(event_stream)) == 6
 
+        # 8 events:
         # random user message just because we can
         message_null_observation = NullObservation(content='')
         event_stream.add_event(message_action, EventSource.USER)
         event_stream.add_event(message_null_observation, EventSource.USER)
-        # 8 events
+        assert len(collect_events(event_stream)) == 8
 
         assert stuck_detector.is_stuck() is False
-        assert stuck_detector.state.almost_stuck == 2
 
+        # 10 events:
         cmd_action_3 = CmdRunAction(command='ls')
         event_stream.add_event(cmd_action_3, EventSource.AGENT)
         cmd_observation_3 = CmdOutputObservation(
@@ -166,14 +164,12 @@ class TestStuckDetector:
         )
         cmd_observation_3._cause = cmd_action_3._id
         event_stream.add_event(cmd_observation_3, EventSource.USER)
-        # 10 events
 
         assert len(collect_events(event_stream)) == 10
-        assert len(list(stuck_detector.state.history.get_events())) == 8
-        assert len(stuck_detector.state.history.get_pairs()) == 5
+        assert len(list(stuck_detector.event_stream.get_events())) == 8
+        assert len(stuck_detector.event_stream.get_pairs()) == 5
 
         assert stuck_detector.is_stuck() is False
-        assert stuck_detector.state.almost_stuck == 1
 
         cmd_action_4 = CmdRunAction(command='ls')
         event_stream.add_event(cmd_action_4, EventSource.AGENT)
@@ -185,12 +181,11 @@ class TestStuckDetector:
         # 12 events
 
         assert len(collect_events(event_stream)) == 12
-        assert len(list(stuck_detector.state.history.get_events())) == 10
-        assert len(stuck_detector.state.history.get_pairs()) == 6
+        assert len(list(stuck_detector.event_stream.get_events())) == 10
+        assert len(stuck_detector.event_stream.get_pairs()) == 6
 
         with patch('logging.Logger.warning') as mock_warning:
             assert stuck_detector.is_stuck() is True
-            assert stuck_detector.state.almost_stuck == 0
             mock_warning.assert_called_once_with('Action, Observation loop detected')
 
     def test_is_stuck_repeating_action_error(
@@ -576,7 +571,6 @@ class TestAgentController:
         )
         controller.delegate = None
         controller.state = Mock()
-        controller.state.history = ShortTermHistory()
         return controller
 
     def test_is_stuck_delegate_stuck(self, controller: AgentController):

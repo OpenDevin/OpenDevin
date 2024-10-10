@@ -22,6 +22,7 @@ from openhands.events.action.action import Action
 from openhands.events.event import Event
 from openhands.events.observation import AgentStateChangedObservation
 from openhands.llm.llm import LLM
+from openhands.memory.conversation_memory import ConversationMemory
 from openhands.runtime import get_runtime_cls
 from openhands.runtime.runtime import Runtime
 from openhands.storage import get_file_store
@@ -104,6 +105,19 @@ async def run_controller(
             (could be None) and returns a fake user response.
         headless_mode: Whether the agent is run in headless mode.
     """
+
+    # make sure the session id is set
+    sid = sid or generate_sid(config)
+
+    # the runtime creates the event stream, so start here
+    if runtime is None:
+        runtime = create_runtime(config, sid=sid)
+
+    event_stream = runtime.event_stream
+
+    # initialize the conversation memory for the agent
+    memory = ConversationMemory(event_stream=event_stream)
+
     # Create the agent
     if agent is None:
         agent_cls: Type[Agent] = Agent.get_cls(config.default_agent)
@@ -112,15 +126,9 @@ async def run_controller(
         agent = agent_cls(
             llm=LLM(config=llm_config),
             config=agent_config,
+            memory=memory,
         )
 
-    # make sure the session id is set
-    sid = sid or generate_sid(config)
-
-    if runtime is None:
-        runtime = create_runtime(config, sid=sid)
-
-    event_stream = runtime.event_stream
     # restore cli session if enabled
     initial_state = None
     if config.enable_cli_session:

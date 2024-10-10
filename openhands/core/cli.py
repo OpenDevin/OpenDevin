@@ -27,6 +27,7 @@ from openhands.events.observation import (
     CmdOutputObservation,
 )
 from openhands.llm.llm import LLM
+from openhands.memory.conversation_memory import ConversationMemory
 from openhands.runtime import get_runtime_cls
 from openhands.runtime.runtime import Runtime
 from openhands.storage import get_file_store
@@ -86,16 +87,21 @@ async def main():
     config = load_app_config(config_file=args.config_file)
     sid = 'cli'
 
+    # create the event stream we'll use
+    file_store = get_file_store(config.file_store, config.file_store_path)
+    event_stream = EventStream(sid, file_store)
+
+    # initialize the conversation memory for the agent
+    memory = ConversationMemory(event_stream=event_stream)
+
     agent_cls: Type[Agent] = Agent.get_cls(config.default_agent)
     agent_config = config.get_agent_config(config.default_agent)
     llm_config = config.get_llm_config_from_agent(config.default_agent)
     agent = agent_cls(
         llm=LLM(config=llm_config),
         config=agent_config,
+        memory=memory,
     )
-
-    file_store = get_file_store(config.file_store, config.file_store_path)
-    event_stream = EventStream(sid, file_store)
 
     runtime_cls = get_runtime_cls(config.runtime)
     runtime: Runtime = runtime_cls(  # noqa: F841

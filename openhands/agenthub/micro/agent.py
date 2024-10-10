@@ -11,7 +11,7 @@ from openhands.events.action import Action
 from openhands.events.serialization.action import action_from_dict
 from openhands.events.serialization.event import event_to_memory
 from openhands.llm.llm import LLM
-from openhands.memory.history import ShortTermHistory
+from openhands.memory.conversation_memory import ConversationMemory
 
 
 def parse_response(orig_response: str) -> Action:
@@ -32,16 +32,27 @@ class MicroAgent(Agent):
     prompt = ''
     agent_definition: dict = {}
 
-    def history_to_json(
-        self, history: ShortTermHistory, max_events: int = 20, **kwargs
-    ):
+    def __init__(self, llm: LLM, config: AgentConfig, memory: ConversationMemory):
+        # init the agent with the required arguments
+        super().__init__(llm, config, memory)
+
+        # check if the agent definition is valid
+        if 'name' not in self.agent_definition:
+            raise ValueError('Agent definition must contain a name')
+
+        # set the prompt template and delegates
+        self.prompt_template = Environment(loader=BaseLoader).from_string(self.prompt)
+        self.delegates = all_microagents.copy()
+        del self.delegates[self.agent_definition['name']]
+
+    def history_to_json(self, max_events: int = 20, **kwargs):
         """
         Serialize and simplify history to str format
         """
         processed_history = []
         event_count = 0
 
-        for event in history.get_events(reverse=True):
+        for event in self.memory.get_events(reverse=True):
             if event_count >= max_events:
                 break
             processed_history.append(
@@ -54,16 +65,8 @@ class MicroAgent(Agent):
 
         return json.dumps(processed_history, **kwargs)
 
-    def __init__(self, llm: LLM, config: AgentConfig):
-        super().__init__(llm, config)
-        if 'name' not in self.agent_definition:
-            raise ValueError('Agent definition must contain a name')
-        self.prompt_template = Environment(loader=BaseLoader).from_string(self.prompt)
-        self.delegates = all_microagents.copy()
-        del self.delegates[self.agent_definition['name']]
-
     def step(self, state: State) -> Action:
-        last_user_message, last_image_urls = state.get_current_user_intent()
+        last_user_message, last_image_urls = self.memory.get_current_user_intent()
         prompt = self.prompt_template.render(
             state=state,
             instructions=instructions,
