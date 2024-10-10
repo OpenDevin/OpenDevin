@@ -105,15 +105,12 @@ class RuntimeClient:
         return self._initial_pwd
 
     async def ainit(self):
-        for plugin in self.plugins_to_load:
-            await plugin.initialize(self.username)
-            self.plugins[plugin.name] = plugin
-            logger.info(f'Initializing plugin: {plugin.name}')
-
-            if isinstance(plugin, JupyterPlugin):
-                await self.run_ipython(
-                    IPythonRunCellAction(code=f'import os; os.chdir("{self.pwd}")')
-                )
+        tasks = [
+            asyncio.create_task(self._init_plugin(plugin))
+            for plugin in self.plugins_to_load
+        ]
+        if tasks:
+            await asyncio.wait(tasks)
 
         # This is a temporary workaround
         # TODO: refactor AgentSkills to be part of JupyterPlugin
@@ -128,6 +125,16 @@ class RuntimeClient:
 
         await self._init_bash_commands()
         logger.info('Runtime client initialized.')
+
+    async def _init_plugin(self, plugin: Plugin):
+        await plugin.initialize(self.username)
+        self.plugins[plugin.name] = plugin
+        logger.info(f'Initializing plugin: {plugin.name}')
+
+        if isinstance(plugin, JupyterPlugin):
+            await self.run_ipython(
+                IPythonRunCellAction(code=f'import os; os.chdir("{self.pwd}")')
+            )
 
     def _init_user(self, username: str, user_id: int) -> None:
         """Create working directory and user if not exists.
