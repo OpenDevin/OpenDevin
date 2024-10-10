@@ -43,7 +43,8 @@
     "ws": "^8.18.0"
   },
   "scripts": {
-    "dev": "npm run make-i18n && remix vite:dev",
+    "dev": "npm run make-i18n && VITE_MOCK_API=true remix vite:dev",
+    "dev:only": "npm run make-i18n && VITE_MOCK_API=false remix vite:dev",
     "build": "npm run make-i18n && tsc && remix vite:build",
     "start": "npx sirv-cli build/client/ --single",
     "test": "vitest run",

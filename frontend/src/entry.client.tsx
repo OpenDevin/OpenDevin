@@ -14,7 +14,10 @@ import "./i18n";
 import store from "./store";
 
 async function prepareApp() {
-  if (process.env.NODE_ENV === "development") {
+  if (
+    process.env.NODE_ENV === "development" &&
+    import.meta.env.VITE_MOCK_API === "true"
+  ) {
     const { worker } = await import("./mocks/browser");
 
     await worker.start({
