@@ -4,8 +4,8 @@ import React from "react";
 import AgentControlBar from "./AgentControlBar";
 import AgentStatusBar from "./AgentStatusBar";
 import { ProjectMenuCard } from "./project-menu/ProjectMenuCard";
-import { clientLoader as rootClientLoader } from "#/root";
-import { clientLoader as appClientLoader } from "#/routes/app";
+import { clientLoader as rootClientLoader } from "#/routes/_oh";
+import { clientLoader as appClientLoader } from "#/routes/_oh.app";
 import { isGitHubErrorReponse } from "#/api/github";
 
 interface ControlsProps {
@@ -19,8 +19,8 @@ export function Controls({
   showSecurityLock,
   lastCommitData,
 }: ControlsProps) {
-  const rootData = useRouteLoaderData<typeof rootClientLoader>("root");
-  const appData = useRouteLoaderData<typeof appClientLoader>("routes/app");
+  const rootData = useRouteLoaderData<typeof rootClientLoader>("routes/_oh");
+  const appData = useRouteLoaderData<typeof appClientLoader>("routes/_oh.app");
 
   const projectMenuCardData = React.useMemo(
     () =>

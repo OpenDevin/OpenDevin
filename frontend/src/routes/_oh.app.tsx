@@ -36,7 +36,7 @@ import { isGitHubErrorReponse, retrieveLatestGitHubCommit } from "#/api/github";
 import OpenHands from "#/api/open-hands";
 import AgentState from "#/types/AgentState";
 import { base64ToBlob } from "#/utils/base64-to-blob";
-import { clientLoader as rootClientLoader } from "#/root";
+import { clientLoader as rootClientLoader } from "#/routes/_oh";
 import { clearJupyter } from "#/state/jupyterSlice";
 import { FilesProvider } from "#/context/files";
 
@@ -108,7 +108,7 @@ function App() {
   const { settings, token, ghToken, repo, q, lastCommit } =
     useLoaderData<typeof clientLoader>();
   const fetcher = useFetcher();
-  const data = useRouteLoaderData<typeof rootClientLoader>("root");
+  const data = useRouteLoaderData<typeof rootClientLoader>("routes/_oh");
 
   // To avoid re-rendering the component when the user object changes, we memoize the user ID.
   // We use this to ensure the github token is valid before exporting it to the terminal.

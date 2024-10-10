@@ -12,7 +12,7 @@ import { ModelSelector } from "#/components/modals/settings/ModelSelector";
 import { Settings } from "#/services/settings";
 import { ModalBackdrop } from "#/components/modals/modal-backdrop";
 import ModalButton from "../buttons/ModalButton";
-import { clientAction } from "#/routes/Settings";
+import { clientAction } from "#/routes/settings";
 import { extractModelAndProvider } from "#/utils/extractModelAndProvider";
 import { DangerModal } from "../modals/confirmation-modals/danger-modal";
 
