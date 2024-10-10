@@ -1,7 +1,21 @@
 # 🤖 LLM Backends
 
 OpenHands can connect to any LLM supported by LiteLLM. However, it requires a powerful model to work.
-The following are verified by the community to work with OpenHands:
+
+## Model Recommendations
+
+Based on a recent evaluation of language models for coding tasks (using the SWE-bench dataset), we can provide some recommendations for model selection. The full analysis can be found in [this blog article](https://www.all-hands.dev/blog/evaluation-of-llms-as-coding-agents-on-swe-bench-at-30x-speed).
+
+When choosing a model, consider both the quality of outputs and the associated costs. Here's a summary of the findings:
+
+1. GPT-4 models generally provide the highest quality results but at a higher cost.
+2. Claude models offer a good balance between quality and cost.
+3. Gemini models show promising results and may be cost-effective for certain tasks.
+4. Open-source models like Mixtral or CodeLlama can be viable options for those with budget constraints or privacy concerns, though they may have lower performance compared to proprietary models.
+
+For the most up-to-date and detailed information on model performance and pricing, please refer to the [full article](https://www.all-hands.dev/blog/evaluation-of-llms-as-coding-agents-on-swe-bench-at-30x-speed).
+
+Based on these findings and community feedback, the following models have been verified to work well with OpenHands:
 
 * claude-3-5-sonnet (recommended)
 * gemini-1.5-pro / gemini-1.5-flash
