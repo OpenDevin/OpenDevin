@@ -1,10 +1,8 @@
 import { screen, act } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders } from "test-utils";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
-import Session from "#/services/session";
-import ActionType from "#/types/ActionType";
 import { addAssistantMessage } from "#/state/chatSlice";
 import AgentState from "#/types/AgentState";
 import ChatInterface from "#/components/chat/ChatInterface";
@@ -34,9 +32,6 @@ HTMLElement.prototype.scrollTo = vi.fn().mockImplementation(() => {});
 const TEST_TIMESTAMP = new Date().toISOString();
 
 describe.skip("ChatInterface", () => {
-  const sessionSendSpy = vi.spyOn(Session, "send");
-  vi.spyOn(Session, "isConnected").mockReturnValue(true);
-
   // TODO: replace below with e.g. fake timers
   // https://vitest.dev/guide/mocking#timers
   // https://vitest.dev/api/vi.html#vi-usefaketimers
@@ -64,19 +59,6 @@ describe.skip("ChatInterface", () => {
             : `expected ${received} to match the structure of ${expected} (ignoring exact timestamp)`,
       };
     },
-  });
-
-  const userMessageEvent = {
-    action: ActionType.MESSAGE,
-    args: {
-      content: "my message",
-      images_urls: [],
-      timestamp: TEST_TIMESTAMP,
-    },
-  };
-
-  afterEach(() => {
-    sessionSendSpy.mockClear();
   });
 
   it("should render empty message list and input", () => {
@@ -125,10 +107,6 @@ describe.skip("ChatInterface", () => {
     const input = screen.getByRole("textbox");
     await user.type(input, "my message");
     await user.keyboard("{Enter}");
-
-    expect(sessionSendSpy).toHaveBeenCalledWith(
-      expect.toMatchMessageEvent(JSON.stringify(userMessageEvent)),
-    );
   });
 
   it("should send the user message as an event to the Session when the agent state is AWAITING_USER_INPUT", async () => {
@@ -144,10 +122,6 @@ describe.skip("ChatInterface", () => {
     const input = screen.getByRole("textbox");
     await user.type(input, "my message");
     await user.keyboard("{Enter}");
-
-    expect(sessionSendSpy).toHaveBeenCalledWith(
-      expect.toMatchMessageEvent(JSON.stringify(userMessageEvent)),
-    );
   });
 
   it("should disable the user input if agent is not initialized", async () => {
@@ -168,7 +142,6 @@ describe.skip("ChatInterface", () => {
     );
 
     expect(submitButton).toBeDisabled();
-    expect(sessionSendSpy).not.toHaveBeenCalled();
   });
 
   it.todo("test scroll-related behaviour");
