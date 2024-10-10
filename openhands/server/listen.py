@@ -24,7 +24,6 @@ from fastapi import (
     FastAPI,
     HTTPException,
     Request,
-    Response,
     UploadFile,
     WebSocket,
     status,
@@ -39,7 +38,6 @@ import openhands.agenthub  # noqa F401 (we import this to get the agents registe
 from openhands.controller.agent import Agent
 from openhands.core.config import LLMConfig, load_app_config
 from openhands.core.logger import openhands_logger as logger
-from openhands.core.schema import AgentState  # Add this import
 from openhands.events.action import (
     ChangeAgentStateAction,
     FileReadAction,
@@ -212,8 +210,10 @@ async def attach_session(request: Request, call_next):
             content={'error': 'Invalid token'},
         )
 
-    request.state.session = session_manager.get_session(request.state.sid)
-    if request.state.session is None:
+    request.state.conversation = session_manager.attach_to_conversation(
+        request.state.sid
+    )
+    if request.state.conversation is None:
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
             content={'error': 'Session not found'},
@@ -433,12 +433,12 @@ async def list_files(request: Request, path: str | None = None):
     Raises:
         HTTPException: If there's an error listing the files.
     """
-    if not request.state.session.agent_session.runtime:
+    if not request.state.conversation.runtime:
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
             content={'error': 'Runtime not yet initialized'},
         )
-    runtime: Runtime = request.state.session.agent_session.runtime
+    runtime: Runtime = request.state.conversation.runtime
     file_list = await asyncio.get_event_loop().run_in_executor(
         None, runtime.list_files, path
     )
@@ -486,7 +486,7 @@ async def select_file(file: str, request: Request):
     Raises:
         HTTPException: If there's an error opening the file.
     """
-    runtime: Runtime = request.state.session.agent_session.runtime
+    runtime: Runtime = request.state.conversation.runtime
 
     file = os.path.join(runtime.config.workspace_mount_path_in_sandbox, file)
     read_action = FileReadAction(file)
@@ -568,7 +568,7 @@ async def upload_file(request: Request, files: list[UploadFile]):
                     tmp_file.write(file_contents)
                     tmp_file.flush()
 
-                runtime: Runtime = request.state.session.agent_session.runtime
+                runtime: Runtime = request.state.conversation.runtime
                 runtime.copy_to(
                     tmp_file_path, runtime.config.workspace_mount_path_in_sandbox
                 )
@@ -636,35 +636,6 @@ async def submit_feedback(request: Request, feedback: FeedbackDataModel):
         )
 
 
-@app.get('/api/root_task')
-def get_root_task(request: Request):
-    """Retrieve the root task of the current agent session.
-
-    To get the root_task:
-    ```sh
-    curl -H "Authorization: Bearer <TOKEN>" http://localhost:3000/api/root_task
-    ```
-
-    Args:
-        request (Request): The incoming request object.
-
-    Returns:
-        dict: The root task data if available.
-
-    Raises:
-        HTTPException: If the root task is not available.
-    """
-    controller = request.state.session.agent_session.controller
-    if controller is not None:
-        state = controller.get_state()
-        if state:
-            return JSONResponse(
-                status_code=status.HTTP_200_OK,
-                content=state.root_task.to_dict(),
-            )
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-
 @app.get('/api/defaults')
 async def appconfig_defaults():
     """Retrieve the default configuration settings.
@@ -701,22 +672,6 @@ async def save_file(request: Request):
             - 500 error if there's an unexpected error during the save operation.
     """
     try:
-        # Get the agent's current state
-        controller = request.state.session.agent_session.controller
-        agent_state = controller.get_agent_state()
-
-        # Check if the agent is in an allowed state for editing
-        if agent_state not in [
-            AgentState.INIT,
-            AgentState.PAUSED,
-            AgentState.FINISHED,
-            AgentState.AWAITING_USER_INPUT,
-        ]:
-            raise HTTPException(
-                status_code=403,
-                detail='Code editing is only allowed when the agent is paused, finished, or awaiting user input',
-            )
-
         # Extract file path and content from the request
         data = await request.json()
         file_path = data.get('filePath')
@@ -727,7 +682,7 @@ async def save_file(request: Request):
             raise HTTPException(status_code=400, detail='Missing filePath or content')
 
         # Save the file to the agent's runtime file store
-        runtime: Runtime = request.state.session.agent_session.runtime
+        runtime: Runtime = request.state.conversation.runtime
         file_path = os.path.join(
             runtime.config.workspace_mount_path_in_sandbox, file_path
         )
@@ -769,13 +724,11 @@ async def security_api(request: Request):
     Raises:
         HTTPException: If the security analyzer is not initialized.
     """
-    if not request.state.session.agent_session.security_analyzer:
+    if not request.state.conversation.security_analyzer:
         raise HTTPException(status_code=404, detail='Security analyzer not initialized')
 
-    return (
-        await request.state.session.agent_session.security_analyzer.handle_api_request(
-            request
-        )
+    return await request.state.conversation.security_analyzer.handle_api_request(
+        request
     )
 
 
@@ -783,7 +736,7 @@ async def security_api(request: Request):
 async def zip_current_workspace(request: Request):
     try:
         logger.info('Zipping workspace')
-        runtime: Runtime = request.state.session.agent_session.runtime
+        runtime: Runtime = request.state.conversation.runtime
 
         path = runtime.config.workspace_mount_path_in_sandbox
         zip_file_bytes = runtime.copy_from(path)

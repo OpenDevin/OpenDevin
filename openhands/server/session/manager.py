@@ -6,7 +6,9 @@ from fastapi import WebSocket
 
 from openhands.core.config import AppConfig
 from openhands.core.logger import openhands_logger as logger
+from openhands.events.stream import session_exists
 from openhands.runtime.utils.shutdown_listener import should_continue
+from openhands.server.session.conversation import Conversation
 from openhands.server.session.session import Session
 from openhands.storage.files import FileStore
 
@@ -43,6 +45,11 @@ class SessionManager:
         if sid not in self._sessions:
             return None
         return self._sessions.get(sid)
+
+    def attach_to_conversation(self, sid: str) -> Conversation | None:
+        if not session_exists(sid, self.file_store):
+            return None
+        return Conversation(sid, file_store=self.file_store, config=self.config)
 
     async def send(self, sid: str, data: dict[str, object]) -> bool:
         """Sends data to the client."""

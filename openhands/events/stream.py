@@ -21,6 +21,14 @@ class EventStreamSubscriber(str, Enum):
     TEST = 'test'
 
 
+def session_exists(sid: str, file_store: FileStore) -> bool:
+    try:
+        file_store.list(f'sessions/{sid}')
+        return True
+    except FileNotFoundError:
+        return False
+
+
 class EventStream:
     sid: str
     file_store: FileStore

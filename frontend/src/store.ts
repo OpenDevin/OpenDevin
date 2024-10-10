@@ -6,7 +6,6 @@ import codeReducer from "./state/codeSlice";
 import fileStateReducer from "./state/file-state-slice";
 import initialQueryReducer from "./state/initial-query-slice";
 import commandReducer from "./state/commandSlice";
-import taskReducer from "./state/taskSlice";
 import jupyterReducer from "./state/jupyterSlice";
 import securityAnalyzerReducer from "./state/securityAnalyzerSlice";
 import statusReducer from "./state/statusSlice";
@@ -18,7 +17,6 @@ export const rootReducer = combineReducers({
   chat: chatReducer,
   code: codeReducer,
   cmd: commandReducer,
-  task: taskReducer,
   agent: agentReducer,
   jupyter: jupyterReducer,
   securityAnalyzer: securityAnalyzerReducer,
