@@ -36,7 +36,7 @@ minio = "^7.2.8"
 gevent = "^24.2.1"
 pyarrow = "17.0.0" # transitive dependency, pinned here to avoid conflicts
 tenacity = "^8.5.0"
-zope-interface = "7.0.3"
+zope-interface = "7.1.0"
 pathspec = "^0.12.1"
 google-cloud-aiplatform = "*"
 anthropic = {extras = ["vertex"], version = "*"}
