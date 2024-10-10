@@ -9,7 +9,7 @@ from openhands.core.config import LLMConfig
 with warnings.catch_warnings():
     warnings.simplefilter('ignore')
     import litellm
-from litellm import ModelInfo
+from litellm import ModelInfo, Router
 from litellm import completion as litellm_completion
 from litellm import completion_cost as litellm_completion_cost
 from litellm.exceptions import (
@@ -75,6 +75,7 @@ class LLM(RetryMixin, DebugMixin):
         self.metrics: Metrics = metrics if metrics is not None else Metrics()
         self.cost_metric_supported: bool = True
         self.config: LLMConfig = copy.deepcopy(config)
+        self.router: Router | None = None
 
         # list of LLM completions (for logging purposes). Each completion is a dict with the following keys:
         # - 'messages': list of messages
@@ -83,16 +84,17 @@ class LLM(RetryMixin, DebugMixin):
 
         # litellm actually uses base Exception here for unknown model
         self.model_info: ModelInfo | None = None
-        try:
-            if self.config.model.startswith('openrouter'):
-                self.model_info = litellm.get_model_info(self.config.model)
-            else:
-                self.model_info = litellm.get_model_info(
-                    self.config.model.split(':')[0]
-                )
-        # noinspection PyBroadException
-        except Exception as e:
-            logger.warning(f'Could not get model info for {config.model}:\n{e}')
+        if self.config.model:
+            try:
+                if self.config.model.startswith('openrouter'):
+                    self.model_info = litellm.get_model_info(self.config.model)
+                else:
+                    self.model_info = litellm.get_model_info(
+                        self.config.model.split(':')[0]
+                    )
+            # noinspection PyBroadException
+            except Exception as e:
+                logger.warning(f'Could not get model info for {config.model}:\n{e}')
 
         # Set the max tokens in an LM-specific way if not set
         if self.config.max_input_tokens is None:
@@ -121,34 +123,52 @@ class LLM(RetryMixin, DebugMixin):
                 ):
                     self.config.max_output_tokens = self.model_info['max_tokens']
 
-        self._completion = partial(
-            litellm_completion,
-            model=self.config.model,
-            api_key=self.config.api_key,
-            base_url=self.config.base_url,
-            api_version=self.config.api_version,
-            custom_llm_provider=self.config.custom_llm_provider,
-            max_tokens=self.config.max_output_tokens,
-            timeout=self.config.timeout,
-            temperature=self.config.temperature,
-            top_p=self.config.top_p,
-            drop_params=self.config.drop_params,
-        )
-
         if self.vision_is_active():
             logger.debug('LLM: model has vision enabled')
         if self.is_caching_prompt_active():
             logger.debug('LLM: caching prompt enabled')
 
-        completion_unwrapped = self._completion
+        router_config: dict[str, Any] | None = None
 
-        @self.retry_decorator(
-            num_retries=self.config.num_retries,
-            retry_exceptions=LLM_RETRY_EXCEPTIONS,
-            retry_min_wait=self.config.retry_min_wait,
-            retry_max_wait=self.config.retry_max_wait,
-            retry_multiplier=self.config.retry_multiplier,
-        )
+        # Set up router configuration
+        if self.config.router_config and self.config.router_config.model_list:
+            model_list = [
+                {
+                    'model_name': model.model_name,
+                    'litellm_params': model.litellm_params,
+                }
+                for model in self.config.router_config.model_list
+            ]
+            router_config = {
+                'model_list': model_list,
+                'routing_strategy': self.config.router_config.routing_strategy,
+                'num_retries': self.config.router_config.num_retries,
+                'cooldown_time': self.config.router_config.cooldown_time,
+                'allowed_fails': self.config.router_config.allowed_fails,
+                'cache_responses': self.config.router_config.cache_responses,
+                'cache_kwargs': self.config.router_config.cache_kwargs,
+                'retry_policy': self.config.router_config.retry_policy,
+                'default_fallbacks': self.config.router_config.default_fallbacks,
+            }
+            self.router = litellm.Router(**router_config)
+            completion_func = self.router.completion
+        else:
+            # If no router models are specified, use the default model config
+            self._completion = partial(
+                litellm_completion,
+                model=self.config.model,
+                api_key=self.config.api_key,
+                base_url=self.config.base_url,
+                api_version=self.config.api_version,
+                custom_llm_provider=self.config.custom_llm_provider,
+                max_tokens=self.config.max_output_tokens,
+                timeout=self.config.timeout,
+                temperature=self.config.temperature,
+                top_p=self.config.top_p,
+                drop_params=self.config.drop_params,
+            )
+            completion_unwrapped = self._completion
+
         def wrapper(*args, **kwargs):
             """Wrapper for the litellm completion function. Logs the input and output of the completion function."""
             messages: list[dict[str, Any]] | dict[str, Any] = []
@@ -187,8 +207,14 @@ class LLM(RetryMixin, DebugMixin):
                         'anthropic-beta': 'prompt-caching-2024-07-31',
                     }
 
+            # Call the completion function (either router.completion or litellm_completion)
             # we don't support streaming here, thus we get a ModelResponse
-            resp: ModelResponse = completion_unwrapped(*args, **kwargs)
+            if self.router and self.config.router_config:
+                default_model = self.config.router_config.model_list[0].model_name
+                model = kwargs.pop('model', default_model)
+                resp: ModelResponse = completion_func(model, **kwargs)
+            else:
+                resp = completion_unwrapped(*args, **kwargs)
 
             # log for evals or other scripts that need the raw completion
             if self.config.log_completions:
@@ -211,7 +237,16 @@ class LLM(RetryMixin, DebugMixin):
 
             return resp
 
-        self._completion = wrapper
+        if not (self.config.router_config and self.config.router_config.model_list):
+            wrapper = self.retry_decorator(
+                num_retries=self.config.num_retries,
+                retry_exceptions=LLM_RETRY_EXCEPTIONS,
+                retry_min_wait=self.config.retry_min_wait,
+                retry_max_wait=self.config.retry_max_wait,
+                retry_multiplier=self.config.retry_multiplier,
+            )(wrapper)
+
+        self._completion = partial(wrapper)
 
     @property
     def completion(self):

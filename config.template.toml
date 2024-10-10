@@ -164,12 +164,138 @@ model = "gpt-4o"
 # If model is vision capable, this option allows to disable image processing (useful for cost reduction).
 #disable_vision = true
 
-[llm.gpt4o-mini]
-# API key to use
-api_key = "your-api-key"
+#################################### Named LLM configurations #####################################
+# Configuration per LLM model:
+# - use section names 'llm.<model_name>', where <model_name> is however you want to name the model configuration.
+# - for example, you can specify a named LLM configuration for 'gpt-4o' as follows:
+# [llm.gpt4o]
+# model = "gpt-4o"
+# api_key = "your-api-key"
+# ...
+#
+# Any and all settings from the default LLM config above may be specified, and they will override the settings in the 'llm' group.
+# This allows for specifying settings per LLM model, which is useful for specifying rate limits, fallbacks, etc. per model, or
+# even just saving your favorite models' configurations in the config file for easy reference.
+#
+# Then, in order to use a named LLM, you can:
+# 1. Without Router:
+#    - specify the 'llm.<model_name>' in the --llm_config=... or -l=... command line option, if running from CLI
+#    - if you want, specify a 'llm.<model_name>' in the default Agent configuration:
+#       [agent]
+#       llm_config='llm.<model_name>'
+#    - or in the configuration of a specific Agent:
+#       [agent.<agent_name>]
+#       llm_config='llm.<model_name>'
+# 2. With Router:
+#    - specify the 'llm.<model_name>' in the router section:
+#       [router_config]
+#       default_model='llm.<model_name>'
+#       model_list = ['llm.<model_name>', ...]
+# Any of the options above, if specified, will take precedence over the settings in the default 'llm' group.
+#
+# IMPORTANT:
+# If Router is used, it takes precedence over ALL the agent specific or default LLM config.
+# ONLY the LLMs in the router config will be used.
+#
+##############################################################################
 
-# Model to use
-model = "gpt-4o-mini"
+# --- Example 1: Anthropic w/ Sonnet 3.5
+
+#[llm.ant-sonnet]
+#model = "anthropic/claude-3-5-sonnet-20240620"
+#api_key = "sk-ant-xxx"
+#base_url not needed
+# Note: all other models may have these parameters, which are optional,
+# but are only mentioned here for brevity. These are example values!
+#max_retries = 3       # Number of retries to attempt when an operation fails
+#max_tokens = 4000     # Maximum number of output tokens
+#tpm = 10000           # Tokens per minute limit
+#rpm = 6               # Requests per minute limit
+
+
+# --- Example 2: OpenAI w/ GPT-4o
+
+# See: https://platform.openai.com/docs/models
+
+#[llm.gpt4o-mini]
+#model = "gpt-4o"
+#api_key = "sk-proj-xxx"
+#base_url not needed
+# This has 128K context length with 16K max output tokens!
+# "Dynamic model continuously updated"
+#max_tokens = 16384     # Maximum number of output tokens
+#tpm = 10000           # Tokens per minute limit
+#rpm = 6               # Requests per minute limit
+
+
+# --- Example 3: OpenRouter w/ Qwen 2.5
+
+# See: https://openrouter.ai/models/
+
+#[llm.or-qwen-2.5]
+#model = "openrouter/qwen/qwen-2.5-72b-instruct"
+#base_url = "https://openrouter.ai/api/v1" # Optional with litellm if model starts with "openrouter/"
+#api_key = "sk-or-v1-xxx"
+
+
+# --- Example 4: Groq w/ Llama 3.2 90B
+
+#[llm.groq-lama-3.2-90b]
+#model = "groq/llama-3.2-90b-text-preview"
+#base_url = "https://api.groq.com/openai/v1"
+#api_key = "gsk_xxx"
+
+
+################################### Router ###################################
+# litellm Router configuration
+# https://litellm.vercel.app/docs/routing
+# The use of Router is optional, and by default disabled.
+# If not specified, see above for the default LLM config and custom (named) LLM configs.
+##############################################################################
+
+# The "router_config"section can only occur once in the config.toml file!
+#[router_config]
+
+# The default model to use for routing, which must be defined as a Named LLM config above.
+#default_model = "llm.gpt-4o"
+
+# The models to use for routing, which must be defined as Named LLM configs above and include the router's default model.
+#model_list = ["llm.gpt-4o", "llm.groq-lama-3.2-90b"]
+
+# The strategy to use for routing (e.g., usage-based-routing, cost-based-routing)
+#routing_strategy = "usage-based-routing"
+
+# Number of retries to attempt when an operation fails
+#num_retries = 3
+
+# waits min. 5s before retrying request
+#retry_after = 15
+
+# cooldown model if it fails > 1 call in a minute
+#allowed_fails = 1
+
+# cooldown the deployment for 100 seconds if it num_fails > allowed_fails
+#cooldown_time = 100
+
+# raise timeout error if call takes > 240s
+#timeout = 240
+
+# Whether to cache responses for reuse
+#cache_responses = false
+
+# Additional cache configuration options, see documentation for details
+#[router_config.cache_kwargs]
+
+# The retry policy for Router is optional, but without it liteLLM will retry on all errors of the types below.
+# You can use this section to limit the retries on errors that are likely permanent errors, such as BadRequest, Authentication, probably ContentPolicyViolation.
+#[router_config.retry_policy]
+#RateLimitErrorAllowedFails=3
+#TimeoutErrorRetries=3
+#InternalServerErrorRetries=3
+#ContentPolicyViolationErrorRetries=0
+#AuthenticationErrorRetries=0
+#BadRequestErrorRetries=0
+
 
 #################################### Agent ###################################
 # Configuration for agents (group name starts with 'agent')

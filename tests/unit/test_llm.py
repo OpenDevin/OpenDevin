@@ -23,22 +23,30 @@ def mock_logger(monkeypatch):
     return mock_logger
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def default_config():
     return LLMConfig(
-        model='gpt-4o',
+        model='openai/gpt-4o',
         api_key='test_key',
-        num_retries=2,
+        max_input_tokens=4096,
+        max_output_tokens=4096,
+        num_retries=3,
         retry_min_wait=1,
-        retry_max_wait=2,
+        retry_max_wait=10,
+        retry_multiplier=2,
     )
+
+
+##############################################################################
+##############################################################################
 
 
 def test_llm_init_with_default_config(default_config):
     llm = LLM(default_config)
-    assert llm.config.model == 'gpt-4o'
+    assert llm.config.model == 'openai/gpt-4o'
     assert llm.config.api_key == 'test_key'
     assert isinstance(llm.metrics, Metrics)
+    assert llm.router is None
 
 
 @patch('openhands.llm.llm.litellm.get_model_info')
@@ -48,8 +56,9 @@ def test_llm_init_with_model_info(mock_get_model_info, default_config):
         'max_output_tokens': 2000,
     }
     llm = LLM(default_config)
-    assert llm.config.max_input_tokens == 8000
-    assert llm.config.max_output_tokens == 2000
+    # model info has precedence over config!
+    assert llm.config.max_input_tokens == 4096
+    assert llm.config.max_output_tokens == 4096
 
 
 @patch('openhands.llm.llm.litellm.get_model_info')
@@ -63,6 +72,7 @@ def test_llm_init_without_model_info(mock_get_model_info, default_config):
 def test_llm_init_with_custom_config():
     custom_config = LLMConfig(
         model='custom-model',
+        custom_llm_provider='openrouter',
         api_key='custom_key',
         max_input_tokens=5000,
         max_output_tokens=1500,
@@ -71,6 +81,7 @@ def test_llm_init_with_custom_config():
     )
     llm = LLM(custom_config)
     assert llm.config.model == 'custom-model'
+    assert llm.config.custom_llm_provider == 'openrouter'
     assert llm.config.api_key == 'custom_key'
     assert llm.config.max_input_tokens == 5000
     assert llm.config.max_output_tokens == 1500
@@ -86,7 +97,7 @@ def test_llm_init_with_metrics():
 
 
 def test_llm_reset():
-    llm = LLM(LLMConfig(model='gpt-4o-mini', api_key='test_key'))
+    llm = LLM(LLMConfig(model='openai/gpt-4o-mini', api_key='test_key'))
     initial_metrics = llm.metrics
     llm.reset()
     assert llm.metrics is not initial_metrics
@@ -101,12 +112,15 @@ def test_llm_init_with_openrouter_model(mock_get_model_info, default_config):
         'max_output_tokens': 1500,
     }
     llm = LLM(default_config)
-    assert llm.config.max_input_tokens == 7000
-    assert llm.config.max_output_tokens == 1500
+    # the litellm model info has precedence over the config!
+    assert llm.config.max_input_tokens == 4096
+    assert llm.config.max_output_tokens == 4096
     mock_get_model_info.assert_called_once_with('openrouter:gpt-4o-mini')
 
 
+######################################################################################
 # Tests involving completion and retries
+######################################################################################
 
 
 @patch('openhands.llm.llm.litellm_completion')
@@ -151,7 +165,7 @@ def test_completion_with_mocked_logger(
     ],
 )
 @patch('openhands.llm.llm.litellm_completion')
-def test_completion_retries(
+def test_default_completion_retries(
     mock_litellm_completion,
     default_config,
     exception_class,
@@ -173,8 +187,11 @@ def test_completion_retries(
     assert mock_litellm_completion.call_count == expected_retries
 
 
+@patch('openhands.llm.llm.time.sleep')
 @patch('openhands.llm.llm.litellm_completion')
-def test_completion_rate_limit_wait_time(mock_litellm_completion, default_config):
+def test_completion_rate_limit_wait_time(
+    mock_litellm_completion, mock_sleep, default_config
+):
     with patch('time.sleep') as mock_sleep:
         mock_litellm_completion.side_effect = [
             RateLimitError(

@@ -18,6 +18,7 @@ from openhands.core.config.config_utils import (
     UndefinedString,
 )
 from openhands.core.config.llm_config import LLMConfig
+from openhands.core.config.router_config import ModelConfig, RouterConfig
 from openhands.core.config.sandbox_config import SandboxConfig
 
 load_dotenv()
@@ -112,9 +113,13 @@ def load_from_toml(cfg: AppConfig, toml_file: str = 'config.toml'):
 
     core_config = toml_config['core']
 
+    router_config: RouterConfig | None = None
+    llm_config: LLMConfig | None = None
+
     # load llm configs and agent configs
     for key, value in toml_config.items():
         if isinstance(value, dict):
+            logger.openhands_logger.debug(f'key={key}, value={value}')
             try:
                 if key is not None and key.lower() == 'agent':
                     logger.openhands_logger.debug(
@@ -132,6 +137,11 @@ def load_from_toml(cfg: AppConfig, toml_file: str = 'config.toml'):
                             )
                             agent_config = AgentConfig(**nested_value)
                             cfg.set_agent_config(agent_config, nested_key)
+                elif key is not None and key.lower() == 'router_config':
+                    # Router config as standalone section (with non-dict/non-nested values)
+                    router_config = RouterConfig(**value)
+                    # TODO: Retry Policy is actually dict
+                    logger.openhands_logger.debug(f'router_config={router_config}')
                 elif key is not None and key.lower() == 'llm':
                     logger.openhands_logger.debug(
                         'Attempt to load default LLM config from config toml'
@@ -144,11 +154,15 @@ def load_from_toml(cfg: AppConfig, toml_file: str = 'config.toml'):
                     for nested_key, nested_value in value.items():
                         if isinstance(nested_value, dict):
                             logger.openhands_logger.debug(
-                                f'Attempt to load group {nested_key} from config toml as llm config'
+                                f'Attempt to load group `{nested_key}` from config toml as llm config'
                             )
                             llm_config = LLMConfig(**nested_value)
                             cfg.set_llm_config(llm_config, nested_key)
-                elif not key.startswith('sandbox') and key.lower() != 'core':
+                elif (
+                    key is not None
+                    and not key.startswith('sandbox')
+                    and key.lower() != 'core'
+                ):
                     logger.openhands_logger.warning(
                         f'Unknown key in {toml_file}: "{key}"'
                     )
@@ -160,6 +174,31 @@ def load_from_toml(cfg: AppConfig, toml_file: str = 'config.toml'):
         else:
             logger.openhands_logger.warning(f'Unknown key in {toml_file}: "{key}')
 
+    # TODO: right now the router_config is treated as "standalone" section in the toml file
+    # and added to the default "llm" section in the AppConfig. At least one test makes use of this.
+    # TODO starting with an LLM disables the router even if configured. Maybe that's okay, we can document it then
+    if router_config is not None:
+        if 'llm' not in cfg.llms:
+            cfg.llms['llm'] = LLMConfig()
+        cfg.llms['llm'].router_config = router_config
+
+    # llms has the user-defined models, so gather them in the model_list
+    # FIXME read ALL models, and then let fallbacks and content_policy_fallbacks restrict the list actually in use?
+    # or use also a model_list = ['openr_qwen', '...'] to restrict the models available to the router at all
+    if router_config is not None:
+        router_config.model_list = [
+            ModelConfig(
+                # model name is the key in the llms dict
+                model_name=model_key,
+                # litellm_params is a subset of the LLMConfig instance we found in the configuration file
+                litellm_params=model_params.to_litellm_params(),
+            )
+            for model_key, model_params in cfg.llms.items()
+            if model_key != 'llm'
+        ]
+        logger.openhands_logger.debug(
+            f'router_config.models={router_config.model_list}'
+        )
     try:
         # set sandbox config from the toml file
         sandbox_config = cfg.sandbox
