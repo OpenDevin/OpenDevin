@@ -167,7 +167,7 @@ export function TaskForm({ importedProjectZip }: TaskFormProps) {
             disabled={navigation.state === "submitting"}
             placeholder={
               selectedRepository
-                ? `What would you like to change in ${selectedRepository}`
+                ? `What would you like to change in ${selectedRepository}?`
                 : "What do you want to build?"
             }
             onChange={handleChange}

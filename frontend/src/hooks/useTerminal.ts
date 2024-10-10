@@ -2,7 +2,7 @@ import { FitAddon } from "@xterm/addon-fit";
 import { Terminal } from "@xterm/xterm";
 import React from "react";
 import { Command } from "#/state/commandSlice";
-import { sendTerminalCommand } from "#/services/terminalService";
+import { getTerminalCommand } from "#/services/terminalService";
 import { parseTerminalOutput } from "#/utils/parseTerminalOutput";
 import { useSocket } from "#/context/socket";
 
@@ -69,7 +69,7 @@ export const useTerminal = (commands: Command[] = []) => {
 
   const handleEnter = (command: string) => {
     terminal.current?.write("\r\n");
-    send(sendTerminalCommand(command));
+    send(getTerminalCommand(command));
   };
 
   const handleBackspace = (command: string) => {

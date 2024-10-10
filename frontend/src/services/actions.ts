@@ -54,6 +54,7 @@ const messageActions = {
     store.dispatch(addAssistantMessage(message.message));
   },
   [ActionType.RUN]: (message: ActionMessage) => {
+    if (message.args.hidden) return;
     if (message.args.thought) {
       store.dispatch(addAssistantMessage(message.args.thought));
     }

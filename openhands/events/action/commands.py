@@ -25,6 +25,7 @@ class CmdRunAction(Action):
     # file2.txt
     # root@sandbox:~# <-- this is the command prompt
 
+    hidden: bool = False
     action: str = ActionType.RUN
     runnable: ClassVar[bool] = True
     is_confirmed: ActionConfirmationStatus = ActionConfirmationStatus.CONFIRMED

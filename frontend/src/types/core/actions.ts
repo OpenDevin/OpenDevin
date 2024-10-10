@@ -14,6 +14,7 @@ export interface CommandAction extends OpenHandsActionEvent<"run"> {
     command: string;
     is_confirmed: "confirmed" | "rejected" | "awaiting_confirmation";
     thought: string;
+    hidden: boolean;
   };
 }
 

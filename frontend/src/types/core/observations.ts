@@ -15,6 +15,7 @@ export interface CommandObservation extends OpenHandsObservationEvent<"run"> {
     command: string;
     command_id: number;
     exit_code: number;
+    hidden: boolean;
   };
 }
 

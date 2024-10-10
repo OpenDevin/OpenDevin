@@ -174,6 +174,8 @@ class AgentController:
         Args:
             event (Event): The incoming event to process.
         """
+        if hasattr(event, 'hidden') and event.hidden:
+            return
         if isinstance(event, Action):
             await self._handle_action(event)
         elif isinstance(event, Observation):

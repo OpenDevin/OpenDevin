@@ -10,6 +10,7 @@ import { addAssistantMessage } from "#/state/chatSlice";
 export function handleObservationMessage(message: ObservationMessage) {
   switch (message.observation) {
     case ObservationType.RUN:
+      if (message.extras.hidden) break;
       store.dispatch(appendOutput(message.content));
       break;
     case ObservationType.RUN_IPYTHON:

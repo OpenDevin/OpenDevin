@@ -463,6 +463,7 @@ class RuntimeClient:
                 command_id=-1,
                 content=all_output.rstrip('\r\n'),
                 command=action.command,
+                hidden=action.hidden,
                 exit_code=exit_code,
             )
         except UnicodeDecodeError:

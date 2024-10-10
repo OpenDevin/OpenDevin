@@ -21,8 +21,11 @@ import ActionType from "#/types/ActionType";
 import { handleAssistantMessage } from "#/services/actions";
 import { addUserMessage, clearMessages } from "#/state/chatSlice";
 import { useSocket } from "#/context/socket";
-import { sendTerminalCommand } from "#/services/terminalService";
-import { appendInput, clearTerminal } from "#/state/commandSlice";
+import {
+  getGitHubTokenCommand,
+  getCloneRepoCommand,
+} from "#/services/terminalService";
+import { clearTerminal } from "#/state/commandSlice";
 import { useEffectOnce } from "#/utils/use-effect-once";
 import CodeIcon from "#/assets/code.svg?react";
 import GlobeIcon from "#/assets/globe.svg?react";
@@ -122,26 +125,6 @@ function App() {
     [],
   );
 
-  const exportGitHubTokenToTerminal = (gitHubToken: string) => {
-    const command = `export GITHUB_TOKEN=${gitHubToken}`;
-    const event = sendTerminalCommand(command);
-
-    send(event);
-    dispatch(appendInput(command.replace(gitHubToken, "***")));
-  };
-
-  const sendCloneRepoCommandToTerminal = (
-    gitHubToken: string,
-    repository: string,
-  ) => {
-    const url = `https://${gitHubToken}@github.com/${repository}.git`;
-    const command = `git clone ${url}`;
-    const event = sendTerminalCommand(command);
-
-    send(event);
-    dispatch(appendInput(command.replace(gitHubToken, "***")));
-  };
-
   const addIntialQueryToChat = (
     query: string,
     base64Files: string[],
@@ -199,7 +182,7 @@ function App() {
         // handle new session
         if (!token) {
           if (ghToken && repo) {
-            sendCloneRepoCommandToTerminal(ghToken, repo);
+            send(getCloneRepoCommand(ghToken, repo));
             dispatch(clearSelectedRepository()); // reset selected repository; maybe better to move this to '/'?
           }
 
@@ -232,7 +215,7 @@ function App() {
   React.useEffect(() => {
     // Export if the user valid, this could happen mid-session so it is handled here
     if (userId && ghToken && runtimeActive) {
-      exportGitHubTokenToTerminal(ghToken);
+      send(getGitHubTokenCommand(ghToken));
     }
   }, [userId, ghToken, runtimeActive]);
 

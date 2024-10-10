@@ -49,7 +49,10 @@ class ShortTermHistory(list[Event]):
         return list(self.get_events(include_delegates=include_delegates))
 
     def get_events(
-        self, reverse: bool = False, include_delegates: bool = False
+        self,
+        reverse: bool = False,
+        include_delegates: bool = False,
+        include_hidden=False,
     ) -> Iterable[Event]:
         """Return the events as a stream of Event objects."""
         # TODO handle AgentRejectAction, if it's not part of a chunk ending with an AgentDelegateObservation
@@ -69,6 +72,8 @@ class ShortTermHistory(list[Event]):
             reverse=reverse,
             filter_out_type=self.filter_out,
         ):
+            if not include_hidden and hasattr(event, 'hidden') and event.hidden:
+                continue
             # TODO add summaries
             # and filter out events that were included in a summary
 
