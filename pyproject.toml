@@ -52,7 +52,8 @@ python-pptx = "*"
 pylatexenc = "*"
 tornado = "*"
 python-dotenv = "*"
-protobuf = ">=4.21.6,<6.0.0" # chromadb currently fails on 5.0+
+protobuf = "^4.21.6" # chromadb currently fails on 5.0+
+opentelemetry-exporter-otlp-proto-grpc = "1.25.0"
 
 [tool.poetry.group.llama-index.dependencies]
 llama-index = "*"
