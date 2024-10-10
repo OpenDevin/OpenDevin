@@ -6,7 +6,7 @@ import ModalButton from "../buttons/ModalButton";
 import FormFieldset from "../form/FormFieldset";
 import { CustomInput } from "../form/custom-input";
 import { clientLoader } from "#/root";
-import { clientAction as settingsClientAction } from "#/routes/Settings";
+import { clientAction as settingsClientAction } from "#/routes/settings";
 import { clientAction as loginClientAction } from "#/routes/login";
 import { AvailableLanguages } from "#/i18n";
 
