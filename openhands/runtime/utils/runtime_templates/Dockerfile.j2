@@ -43,11 +43,14 @@ RUN /openhands/micromamba/bin/micromamba create -n openhands -y && \
 # ================================================================
 {% endif %}
 
+
 # ================================================================
-# START: Copy Project and Install/Update Dependencies
+# START: Copy the pyproject.toml
 # ================================================================
 RUN if [ -d /openhands/code ]; then rm -rf /openhands/code; fi
-COPY ./code /openhands/code
+COPY ./code/pyproject.toml /openhands/code/pyproject.toml
+RUN mkdir -p /openhands/code/
+COPY ./code/openhands/__init__.py /openhands/code/openhands/__init__.py
 
 # Below RUN command sets up the Python environment using Poetry,
 # installs project dependencies, and configures the container
@@ -57,17 +60,34 @@ COPY ./code /openhands/code
 # the bash environment to ensure the correct Python interpreter and
 # virtual environment are used by default.
 WORKDIR /openhands/code
+
+
+# ================================================================
+# Initial Dependencies. (After the next release we can move this inside the skip_init section)
+# ================================================================
 RUN \
     /openhands/micromamba/bin/micromamba config set changeps1 False && \
     # Configure Poetry and create virtual environment
     /openhands/micromamba/bin/micromamba run -n openhands poetry config virtualenvs.path /openhands/poetry && \
     /openhands/micromamba/bin/micromamba run -n openhands poetry env use python3.12 && \
-    # Install project dependencies
-    /openhands/micromamba/bin/micromamba run -n openhands poetry install --only main,runtime --no-interaction --no-root && \
     # Update and install additional tools
     apt-get update && \
     /openhands/micromamba/bin/micromamba run -n openhands poetry run pip install playwright && \
-    /openhands/micromamba/bin/micromamba run -n openhands poetry run playwright install --with-deps chromium && \
+    /openhands/micromamba/bin/micromamba run -n openhands poetry run playwright install --with-deps chromium
+
+
+# ================================================================
+# START: Copy Project and Install/Update Dependencies
+# ================================================================
+RUN if [ -d /openhands/code ]; then rm -rf /openhands/code; fi
+COPY ./code /openhands/code
+
+# ================================================================
+# START: Copy Project and Install/Update Dependencies
+# ================================================================
+RUN \
+    # Install project dependencies
+    /openhands/micromamba/bin/micromamba run -n openhands poetry install --only main --no-interaction --no-root && \
     # Set environment variables
     echo "OH_INTERPRETER_PATH=$(/openhands/micromamba/bin/micromamba run -n openhands poetry run python -c "import sys; print(sys.executable)")" >> /etc/environment && \
     # Install extra dependencies if specified
