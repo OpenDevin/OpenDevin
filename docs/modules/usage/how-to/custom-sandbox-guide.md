@@ -1,80 +1,75 @@
 # Custom Sandbox
 
-The sandbox is where the agent does its work. Instead of running commands directly on your computer
-(which could be dangerous), the agent runs them inside of a Docker container.
+The sandbox is where the agent performs its tasks. Instead of running commands directly on your computer
+(which could be risky), the agent runs them inside a Docker container.
 
 The default OpenHands sandbox (`python-nodejs:python3.12-nodejs22`
 from [nikolaik/python-nodejs](https://hub.docker.com/r/nikolaik/python-nodejs)) comes with some packages installed such
-as python and Node.js but your use case may need additional software installed by default.
+as python and Node.js but may need other software installed by default.
 
-There are two ways you can do so:
+You have two options for customization:
 
-1. Use an existing image from docker hub.
-2. Creating your own custom docker image and using it.
+1. Use an existing image with the required software.
+2. Create your own custom Docker image.
 
-If you want to take the first approach, you can skip the `Create Your Docker Image` section.
-
-## Setup
-
-Make sure you are able to run OpenHands using the [Development.md](https://github.com/All-Hands-AI/OpenHands/blob/main/Development.md) first.
+If you choose the first option, you can skip the `Create Your Docker Image` section.
 
 ## Create Your Docker Image
 
-To create a custom docker image, it must be debian/ubuntu based.
+To create a custom Docker image, it must be Debian based.
 
-For example, if we want OpenHands to have access to the `node` binary, we would use the following Dockerfile:
+For example, if you want OpenHands to have `ruby` installed, create a `Dockerfile` with the following content:
 
 ```dockerfile
-# Start with latest ubuntu image
-FROM ubuntu:latest
+FROM debian:latest
 
-# Run needed updates
-RUN apt-get update && apt-get install -y
-
-# Install node
-RUN apt-get install -y nodejs
+# Install required packages
+RUN apt-get update && apt-get install -y ruby
 ```
 
-Next build your docker image with the name of your choice, for example `custom_image`.
+Save this file in a folder. Then, build your Docker image (e.g., named custom-image) by navigating to the folder in
+the terminal and running::
+```bash
+docker build -t custom-image .
+```
 
-To do this you can create a directory and put your file inside it with the name `Dockerfile`, and inside the directory run the following command:
+This will produce a new image called `custom-image`, which will be available in Docker.
+
+> Note that in the configuration described in this document, OpenHands will run as user "openhands" inside the
+> sandbox and thus all packages installed via the docker file should be available to all users on the system, not just root.
+
+## Option 1: Using the Docker Command
+
+[In the docker command](https://docs.all-hands.dev/modules/usage/installation#start-the-app), replace
+`SANDBOX_RUNTIME_CONTAINER_IMAGE` with `SANDBOX_BASE_CONTAINER_IMAGE` and set it to the desired image.
+This can be an image you’ve already pulled or one you’ve built:
 
 ```bash
-docker build -t custom_image .
+docker run -it --pull=always \
+    -e SANDBOX_BASE_CONTAINER_IMAGE=custom-image \
+    ...
 ```
 
-This will produce a new image called ```custom_image``` that will be available in Docker Engine.
+## Option 2: Using the Development Workflow
 
-> Note that in the configuration described in this document, OpenHands will run as user "openhands" inside the sandbox and thus all packages installed via the docker file should be available to all users on the system, not just root.
->
-> Installing with apt-get above installs node for all users.
+### Setup
 
-## Specify your sandbox image in config.toml file
+First, ensure you can run OpenHands by following the instructions in [Development.md](https://github.com/All-Hands-AI/OpenHands/blob/main/Development.md).
 
-OpenHands configuration occurs via the top-level `config.toml` file.
+### Specify the Base Sandbox Image
 
-Create a `config.toml` file in the OpenHands directory and enter these contents:
+In the `config.toml` file within the OpenHands directory, set the `sandbox_base_container_image` to the image you want to use.
+This can be an image you’ve already pulled or one you’ve built:
 
-```toml
+```bash
 [core]
-workspace_base="./workspace"
-run_as_openhands=true
-sandbox_base_container_image="custom_image"
+...
+sandbox_base_container_image="custom-image"
 ```
 
-For `sandbox_base_container_image`, you can specify either:
+### Run
 
-1. The name of your custom image that you built in the previous step (e.g., `”custom_image”`)
-2. A pre-existing image from Docker Hub (e.g., `”node:20”` if you want a sandbox with Node.js pre-installed)
-
-## Run
 Run OpenHands by running ```make run``` in the top level directory.
-
-Navigate to ```localhost:3001``` and check if your desired dependencies are available.
-
-In the case of the example above, running ```node -v``` in the terminal produces ```v20.15.0```.
-
-Congratulations!
 
 ## Technical Explanation
 
