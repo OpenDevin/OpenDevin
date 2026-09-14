@@ -2530,6 +2530,48 @@ describe("ConversationPanel", () => {
     });
   });
 
+  it("toggles all grouped workspace folders from the Conversations header", async () => {
+    useConversationPanelPreferencesStore.setState({ organizeMode: "grouped" });
+    vi.spyOn(
+      AgentServerConversationService,
+      "searchConversations",
+    ).mockResolvedValue({
+      items: [
+        createMockConversation({
+          id: "alpha-chat",
+          title: "Alpha Chat",
+          selected_workspace: "/workspace/alpha",
+        }),
+        createMockConversation({
+          id: "beta-chat",
+          title: "Beta Chat",
+          selected_workspace: "/workspace/beta",
+        }),
+      ],
+      next_page_id: null,
+    });
+
+    const user = userEvent.setup();
+    renderConversationPanel();
+
+    const toggle = await screen.findByTestId("conversations-folder-toggle");
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByText("Alpha Chat")).toBeInTheDocument();
+    expect(screen.getByText("Beta Chat")).toBeInTheDocument();
+
+    await user.click(toggle);
+
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByText("Alpha Chat")).not.toBeInTheDocument();
+    expect(screen.queryByText("Beta Chat")).not.toBeInTheDocument();
+
+    await user.click(toggle);
+
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByText("Alpha Chat")).toBeInTheDocument();
+    expect(screen.getByText("Beta Chat")).toBeInTheDocument();
+  });
+
   it("reorders grouped folders via drag and drop", async () => {
     useConversationPanelPreferencesStore.setState({
       organizeMode: "grouped",

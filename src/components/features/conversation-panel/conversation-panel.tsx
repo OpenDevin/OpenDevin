@@ -530,6 +530,16 @@ export function ConversationPanel({
     [conversationGroups],
   );
 
+  const hasExpandedConversationGroups = conversationGroupIds.some(
+    (groupId) => !collapsedGroupIds.has(groupId),
+  );
+
+  const toggleAllConversationGroups = React.useCallback(() => {
+    setCollapsedGroupIds(
+      () => new Set(hasExpandedConversationGroups ? conversationGroupIds : []),
+    );
+  }, [conversationGroupIds, hasExpandedConversationGroups]);
+
   const compactVisibleConversations = React.useMemo(
     () =>
       sortConversationsByField(
@@ -1071,9 +1081,21 @@ export function ConversationPanel({
             data-testid="older-conversations-summary"
             className="flex min-w-0 flex-nowrap items-center gap-x-2 py-2 pl-4 pr-2.5 text-[var(--oh-muted)]"
           >
-            <span className="min-w-0 truncate text-sm font-medium text-[var(--oh-muted)]">
-              {t(I18nKey.SIDEBAR$CONVERSATIONS)}
-            </span>
+            {organizeMode === "grouped" && conversationGroupIds.length > 0 ? (
+              <button
+                type="button"
+                data-testid="conversations-folder-toggle"
+                aria-expanded={hasExpandedConversationGroups}
+                onClick={toggleAllConversationGroups}
+                className="min-w-0 truncate text-left text-sm font-medium text-[var(--oh-muted)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--oh-border)]"
+              >
+                {t(I18nKey.SIDEBAR$CONVERSATIONS)}
+              </button>
+            ) : (
+              <span className="min-w-0 truncate text-sm font-medium text-[var(--oh-muted)]">
+                {t(I18nKey.SIDEBAR$CONVERSATIONS)}
+              </span>
+            )}
             <div className="ml-auto flex shrink-0 items-center gap-0.5">
               <ConversationPanelNewThreadPicker
                 backendKind={activeBackend.kind}
