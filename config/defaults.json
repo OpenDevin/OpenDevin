@@ -1,9 +1,9 @@
 {
   "_comment": "Single source of truth for version pins, ports, paths, and defaults shared across the npm and Docker install paths. Read by scripts/dev-safe.mjs, scripts/dev-with-automation.mjs, docker/entrypoint.sh (via generated defaults.env), and .github/workflows/docker.yml.",
   "versions": {
-    "agentServer": "1.46.0",
+    "agentServer": "1.48.0",
     "agentCanvas": "1.18.0",
-    "automation": "1.12.0"
+    "automation": "1.12.1"
   },
   "compatibility": {
     "minimumAgentServer": "1.28.0"

@@ -581,10 +581,10 @@ When adding code that needs a new string, decide up front which rule it falls un
 - `scripts/dev-safe.mjs` uses `uvx` for temporary agent-server installation — no permanent `uv tool install` needed. Environment variables (highest precedence first):
   - `OH_AGENT_SERVER_LOCAL_PATH` — absolute path to a local `software-agent-sdk` checkout. Runs the local checkout via `uvx` with `--with-editable` for `openhands-sdk`/`openhands-tools`/`openhands-workspace` and `--reinstall` for `openhands-agent-server`, so SDK edits are picked up on restart. Highest precedence.
   - `OH_AGENT_SERVER_GIT_REF` — git commit SHA or branch name (takes precedence over version)
-  - `OH_AGENT_SERVER_VERSION` — specific PyPI version (e.g., "1.46.0")
+  - `OH_AGENT_SERVER_VERSION` — specific PyPI version (e.g., "1.48.0")
   - `OH_SECRET_KEY` — secret key for settings encryption; auto-generated and persisted to `~/.openhands/agent-canvas/secret-key.txt` on first run (same file Docker uses), ensuring dev mode and Docker share the same key when both mount the same `~/.openhands` directory. Override with the env var to pin a specific key.
   - `SESSION_API_KEY` / `OH_SESSION_API_KEYS_0` / `VITE_SESSION_API_KEY` — session API key for agent-server authentication; auto-generated using `crypto.randomBytes(32)` if not set, passed to both agent-server (`OH_SESSION_API_KEYS_0`) and frontend (`VITE_SESSION_API_KEY`)
-  - Default: released PyPI version `1.46.0` for agent-server SDK libraries
+  - Default: released PyPI version `1.48.0` for agent-server SDK libraries
 
 - Security: launchers generate and persist a 64-character session API key at `~/.openhands/agent-canvas/session-api-key.txt` unless overridden. The agent-server and automation backend share that session key. `OH_SECRET_KEY` protects settings encryption and is persisted separately at `~/.openhands/agent-canvas/secret-key.txt`.
 - `scripts/dev-safe.mjs` should fail fast if `uvx` cannot be spawned (for example missing PATH entries).

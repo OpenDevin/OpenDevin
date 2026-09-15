@@ -468,13 +468,13 @@ describe("buildAgentServerCommand", () => {
     // Defaults to the released PyPI version with all SDK packages pinned to same version
     expect(cmd.args).toEqual([
       "--from",
-      "openhands-agent-server==1.46.0",
+      "openhands-agent-server==1.48.0",
       "--with",
-      "openhands-sdk==1.46.0",
+      "openhands-sdk==1.48.0",
       "--with",
-      "openhands-tools==1.46.0",
+      "openhands-tools==1.48.0",
       "--with",
-      "openhands-workspace==1.46.0",
+      "openhands-workspace==1.48.0",
       "--with",
       "agent-client-protocol<0.11",
       "--with",
@@ -483,7 +483,7 @@ describe("buildAgentServerCommand", () => {
       "--import-modules",
       "canvas_ui_tool",
     ]);
-    expect(cmd.source).toBe("PyPI (1.46.0, default)");
+    expect(cmd.source).toBe("PyPI (1.48.0, default)");
   });
 
   it("uses specific PyPI version when OH_AGENT_SERVER_VERSION is set with all packages pinned", () => {
