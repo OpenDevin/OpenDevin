@@ -10,15 +10,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { I18nextProvider } from "react-i18next";
 import i18n from "i18next";
 import { NavigationProvider } from "#/context/navigation-context";
-import {
-  afterEach,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { createRoutesStub } from "react-router";
 import React from "react";
@@ -89,6 +81,14 @@ vi.mock("#/utils/custom-toast-handlers", () => ({
   TOAST_OPTIONS: {},
 }));
 
+vi.mock("react-router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("react-router")>()),
+  Link: ({ children }: React.PropsWithChildren) => children,
+  useNavigate: vi.fn(() => vi.fn()),
+  useLocation: vi.fn(() => ({ pathname: "/conversation" })),
+  useParams: vi.fn(() => ({ conversationId: "2" })),
+}));
+
 describe("ConversationPanel", () => {
   const onCloseMock = vi.fn();
   const RouterStub = createRoutesStub([
@@ -117,16 +117,6 @@ describe("ConversationPanel", () => {
     await user.click(screen.getByTestId("conversation-layouts-toggle"));
     await user.click(screen.getByTestId("advanced-options-row"));
   };
-
-  beforeAll(() => {
-    vi.mock("react-router", async (importOriginal) => ({
-      ...(await importOriginal<typeof import("react-router")>()),
-      Link: ({ children }: React.PropsWithChildren) => children,
-      useNavigate: vi.fn(() => vi.fn()),
-      useLocation: vi.fn(() => ({ pathname: "/conversation" })),
-      useParams: vi.fn(() => ({ conversationId: "2" })),
-    }));
-  });
 
   const mockConversations: AppConversation[] = [
     createMockConversation({ id: "1", title: "Conversation 1" }),

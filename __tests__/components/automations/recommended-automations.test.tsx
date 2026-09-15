@@ -215,6 +215,7 @@ describe("recommended automations", () => {
       "slack-standup-digest",
       "linear-triage-assistant",
       "linear-issue-to-github-pr",
+      "gitlab-issue-to-mr",
       "linear-issue-to-gitlab-mr",
       "linear-issue-to-bitbucket-pr",
       "jira-issue-to-pr",
@@ -222,6 +223,7 @@ describe("recommended automations", () => {
       "jira-issue-to-gitlab-mr",
       "research-brief-writer",
       "jira-issue-to-bitbucket-pr",
+      "github-issue-triage",
       "upstream-fork-sync",
       "incident-retrospective-drafter",
     ]);
@@ -247,7 +249,7 @@ describe("recommended automations", () => {
     expect(betaHeading).toHaveTextContent(
       I18nKey.RECOMMENDED_AUTOMATIONS$BETA_LABEL,
     );
-    expect(within(betaHeading).getByText("13")).toBeInTheDocument();
+    expect(within(betaHeading).getByText("15")).toBeInTheDocument();
 
     const betaSection = screen.getByTestId(
       "recommended-automations-beta-section",
